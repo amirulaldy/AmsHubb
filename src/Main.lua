@@ -1,7 +1,7 @@
---==============================
+--==================================
 -- AmsHub | Fish It
 -- Main.lua (Single File)
---==============================
+--==================================
 
 -- SERVICES
 local Players = game:GetService("Players")
@@ -10,32 +10,30 @@ local TweenService = game:GetService("TweenService")
 
 local LP = Players.LocalPlayer
 
---==============================
+--==================================
 -- CHARACTER UTILS
---==============================
+--==================================
 local function getHRP()
     local char = LP.Character or LP.CharacterAdded:Wait()
     return char:WaitForChild("HumanoidRootPart")
 end
 
---==============================
--- TELEPORT SETTINGS
---==============================
-local TeleportMode = "SAFE" -- "FAST" / "SAFE"
-local FAST_OFFSET = Vector3.new(0, 12, 0)
+--==================================
+-- TELEPORT SETTINGS (FAST, NO FREEZE)
+--==================================
+local TELEPORT_OFFSET = Vector3.new(0, 3, 0) -- kecil, presisi
+local TELEPORT_TIME = 0.04 -- makin kecil makin instan (0.03–0.06 recommended)
 
---==============================
--- TELEPORT DATA (EDIT COORDINAT DI SINI)
---==============================
+--==================================
+-- TELEPORT DATA (EDIT KOORDINAT DI SINI)
+--==================================
 local Teleports = {
     -- ISLAND
-    {name="Fisherman Island", cat="Island", cf=CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875)},
+    {name="Fisherman Island", cat="Island", cf=CFrame.new(0,0,0)},
     {name="Kohana", cat="Island", cf=CFrame.new(0,0,0)},
     {name="Tropical Grove", cat="Island", cf=CFrame.new(0,0,0)},
     {name="Ancient Jungle", cat="Island", cf=CFrame.new(0,0,0)},
     {name="Creater Island", cat="Island", cf=CFrame.new(0,0,0)},
-    {name="Kohana Volcano", cat="Island", cf=CFrame.new(-424.22802734375, 7.2453107833862305, 123.47695922851562)},
-
 
     -- DEPTH
     {name="Coral Reefs", cat="Depth", cf=CFrame.new(0,0,0)},
@@ -44,49 +42,33 @@ local Teleports = {
     {name="Volcano Cavern", cat="Depth", cf=CFrame.new(0,0,0)},
 
     -- SECRET
-    {name="Ancient Ruin", cat="Secret", cf=CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875)},
+    {name="Ancient Ruin", cat="Secret", cf=CFrame.new(0,0,0)},
     {name="Sacred Temple", cat="Secret", cf=CFrame.new(0,0,0)},
     {name="Treasure Room", cat="Secret", cf=CFrame.new(0,0,0)},
-    {name="Pirate Cove", cat="Secret", cf=CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625)},
+    {name="Pirate Cove", cat="Secret", cf=CFrame.new(0,0,0)},
     {name="Pirate Treasure Room", cat="Secret", cf=CFrame.new(0,0,0)},
     {name="Sisyphus Statue", cat="Secret", cf=CFrame.new(0,0,0)},
 }
 
---==============================
--- TELEPORT LOGIC
---==============================
-local function fastTeleport(cf)
-    getHRP().CFrame = cf + FAST_OFFSET
-end
-
-local function safeTeleport(cf)
+--==================================
+-- FAST SMOOTH TELEPORT (NO FREEZE)
+--==================================
+local function fastSmoothTeleport(cf)
     local hrp = getHRP()
-    local params = RaycastParams.new()
-    params.FilterDescendantsInstances = {LP.Character}
-    params.FilterType = Enum.RaycastFilterType.Blacklist
+    local targetCF = cf + TELEPORT_OFFSET
 
-    local origin = cf.Position + Vector3.new(0,120,0)
-    local direction = Vector3.new(0,-400,0)
-    local result = workspace:Raycast(origin, direction, params)
-
-    if result then
-        hrp.CFrame = CFrame.new(result.Position + Vector3.new(0,6,0))
-    else
-        hrp.CFrame = cf + Vector3.new(0,15,0)
-    end
+    -- Tween sangat cepat & linear → halus, instan, tidak mengganggu aksi (mancing)
+    local tween = TweenService:Create(
+        hrp,
+        TweenInfo.new(TELEPORT_TIME, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
+        {CFrame = targetCF}
+    )
+    tween:Play()
 end
 
-local function doTeleport(cf)
-    if TeleportMode == "FAST" then
-        fastTeleport(cf)
-    else
-        safeTeleport(cf)
-    end
-end
-
---==============================
+--==================================
 -- UI CREATION
---==============================
+--==================================
 local gui = Instance.new("ScreenGui")
 gui.Name = "AmsHub"
 gui.ResetOnSpawn = false
@@ -115,7 +97,6 @@ local TitlePadding = Instance.new("UIPadding")
 TitlePadding.PaddingLeft = UDim.new(0,12)
 TitlePadding.Parent = Title
 
-
 -- SIDEBAR
 local Side = Instance.new("Frame", Main)
 Side.Position = UDim2.new(0,0,0,36)
@@ -128,9 +109,9 @@ Content.Position = UDim2.new(0,140,0,36)
 Content.Size = UDim2.new(1,-140,1,-36)
 Content.BackgroundColor3 = Color3.fromRGB(10,10,10)
 
---==============================
--- SIDEBAR BUTTON
---==============================
+--==================================
+-- SIDEBAR BUTTON (COLLAPSE)
+--==================================
 local TeleportBtn = Instance.new("TextButton", Side)
 TeleportBtn.Size = UDim2.new(1,-10,0,40)
 TeleportBtn.Position = UDim2.new(0,5,0,10)
@@ -141,9 +122,9 @@ TeleportBtn.TextColor3 = Color3.new(1,1,1)
 TeleportBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
 Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0,8)
 
---==============================
+--==================================
 -- SEARCH BAR
---==============================
+--==================================
 local Search = Instance.new("TextBox", Content)
 Search.Size = UDim2.new(1,-20,0,34)
 Search.Position = UDim2.new(0,10,0,10)
@@ -156,33 +137,16 @@ Search.TextColor3 = Color3.new(1,1,1)
 Search.BackgroundColor3 = Color3.fromRGB(20,20,20)
 Instance.new("UICorner", Search).CornerRadius = UDim.new(0,8)
 
---==============================
--- MODE BUTTON
---==============================
-local ModeBtn = Instance.new("TextButton", Content)
-ModeBtn.Size = UDim2.new(0,120,0,30)
-ModeBtn.Position = UDim2.new(1,-130,0,52)
-ModeBtn.Text = "MODE: SAFE"
-ModeBtn.Font = Enum.Font.GothamBold
-ModeBtn.TextSize = 12
-ModeBtn.TextColor3 = Color3.new(1,1,1)
-ModeBtn.BackgroundColor3 = Color3.fromRGB(90,0,0)
-Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0,8)
-
-ModeBtn.MouseButton1Click:Connect(function()
-    TeleportMode = (TeleportMode=="SAFE") and "FAST" or "SAFE"
-    ModeBtn.Text = "MODE: "..TeleportMode
-end)
-
---==============================
--- SCROLLING LIST
---==============================
+--==================================
+-- SCROLLING LIST (RAPI & SCROLL)
+--==================================
 local Scroll = Instance.new("ScrollingFrame", Content)
-Scroll.Position = UDim2.new(0,10,0,90)
-Scroll.Size = UDim2.new(1,-20,1,-100)
+Scroll.Position = UDim2.new(0,10,0,54)
+Scroll.Size = UDim2.new(1,-20,1,-64)
 Scroll.CanvasSize = UDim2.new(0,0,0,0)
 Scroll.ScrollBarImageTransparency = 0.2
 Scroll.BackgroundTransparency = 1
+Scroll.AutomaticCanvasSize = Enum.AutomaticSize.None
 
 local function rebuildList(filter)
     Scroll:ClearAllChildren()
@@ -195,7 +159,7 @@ local function rebuildList(filter)
     end)
 
     for _,tp in ipairs(Teleports) do
-        if (not filter) or string.find(tp.name:lower(), filter:lower()) then
+        if (not filter) or string.find(tp.name:lower(), filter:lower(), 1, true) then
             local b = Instance.new("TextButton", Scroll)
             b.Size = UDim2.new(1,0,0,42)
             b.Text = tp.name.."  ["..tp.cat.."]"
@@ -206,7 +170,7 @@ local function rebuildList(filter)
             Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
 
             b.MouseButton1Click:Connect(function()
-                doTeleport(tp.cf)
+                fastSmoothTeleport(tp.cf)
             end)
         end
     end
@@ -220,9 +184,9 @@ Search:GetPropertyChangedSignal("Text"):Connect(function()
     rebuildList(Search.Text ~= "" and Search.Text or nil)
 end)
 
---==============================
--- MINIMIZE TO BUBBLE
---==============================
+--==================================
+-- MINIMIZE TO BUBBLE (DRAGGABLE)
+--==================================
 local Bubble = Instance.new("TextButton", gui)
 Bubble.Size = UDim2.new(0,50,0,50)
 Bubble.Position = UDim2.new(0,20,0.5,-25)
@@ -253,9 +217,9 @@ Bubble.MouseButton1Click:Connect(function()
     Main.Visible = true
 end)
 
---==============================
--- RIGHT SHIFT TOGGLE
---==============================
+--==================================
+-- RIGHT SHIFT HIDE / SHOW
+--==================================
 UIS.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
