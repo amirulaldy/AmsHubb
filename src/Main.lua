@@ -1,158 +1,243 @@
---==================================================
--- AMS HUB | Fish It
--- UI FIXED + TELEPORT SYSTEM
---==================================================
+--==============================
+-- AmsHub | Fish It
+-- Main.lua (Single File)
+--==============================
 
 -- SERVICES
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
 local LP = Players.LocalPlayer
 
--- SAFE HRP
+--==============================
+-- CHARACTER UTILS
+--==============================
 local function getHRP()
-    local c = LP.Character or LP.CharacterAdded:Wait()
-    return c:WaitForChild("HumanoidRootPart")
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    return char:WaitForChild("HumanoidRootPart")
 end
 
--- OFFSET (anti stuck)
-local SAFE_OFFSET = Vector3.new(0, 5, 0)
+--==============================
+-- TELEPORT SETTINGS
+--==============================
+local TeleportMode = "SAFE" -- "FAST" / "SAFE"
+local FAST_OFFSET = Vector3.new(0, 12, 0)
 
---==================================================
--- TELEPORT DATA (EDIT COORDINAT SENDIRI)
---==================================================
+--==============================
+-- TELEPORT DATA (EDIT COORDINAT DI SINI)
+--==============================
 local Teleports = {
-    Island = {
-        ["Fisherman Island"] = CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875),
-        ["Kohana"] = CFrame.new(0,0,0),
-        ["Kohana Volcano"] = CFrame.new(-424.22802734375, 7.2453107833862305, 123.47695922851562),
-        ["Tropical Grove"] = CFrame.new(0,0,0),
-        ["Pirate Cove"] = CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625),
-        ["Creater Island"] = CFrame.new(0,0,0),
-    },
-    Depth = {
-        ["Coral Reefs"] = CFrame.new(0,0,0),
-        ["Esoteric Depths"] = CFrame.new(0,0,0),
-        ["Volcano Cavern"] = CFrame.new(0,0,0),
-        ["Crystal Depths"] = CFrame.new(0,0,0),
-        ["Underground Cellar"] = CFrame.new(0,0,0),
-    },
-    Secret = {
-        ["Treasure Room"] = CFrame.new(0,0,0),
-        ["Pirate Treasure Room"] = CFrame.new(0,0,0),
-        ["Ancient Jungle"] = CFrame.new(0,0,0),
-        ["Sacred Temple"] = CFrame.new(0,0,0),
-        ["Ancient Ruin"] = CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875),
-        ["Sisyphus Statue"] = CFrame.new(0,0,0),
-    }
+    -- ISLAND
+    {name="Fisherman Island", cat="Island", cf=CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875)},
+    {name="Kohana", cat="Island", cf=CFrame.new(0,0,0)},
+    {name="Tropical Grove", cat="Island", cf=CFrame.new(0,0,0)},
+    {name="Ancient Jungle", cat="Island", cf=CFrame.new(0,0,0)},
+    {name="Creater Island", cat="Island", cf=CFrame.new(0,0,0)},
+    {name="Kohana Volcano", cat="Island", cf=CFrame.new(-424.22802734375, 7.2453107833862305, 123.47695922851562)},
+
+
+    -- DEPTH
+    {name="Coral Reefs", cat="Depth", cf=CFrame.new(0,0,0)},
+    {name="Esoteric Depths", cat="Depth", cf=CFrame.new(0,0,0)},
+    {name="Crystal Depths", cat="Depth", cf=CFrame.new(0,0,0)},
+    {name="Volcano Cavern", cat="Depth", cf=CFrame.new(0,0,0)},
+
+    -- SECRET
+    {name="Ancient Ruin", cat="Secret", cf=CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875)},
+    {name="Sacred Temple", cat="Secret", cf=CFrame.new(0,0,0)},
+    {name="Treasure Room", cat="Secret", cf=CFrame.new(0,0,0)},
+    {name="Pirate Cove", cat="Secret", cf=CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625)},
+    {name="Pirate Treasure Room", cat="Secret", cf=CFrame.new(0,0,0)},
+    {name="Sisyphus Statue", cat="Secret", cf=CFrame.new(0,0,0)},
 }
 
---==================================================
--- UI ROOT
---==================================================
-local GUI = Instance.new("ScreenGui")
-GUI.Name = "AmsHub"
-GUI.ResetOnSpawn = false
-GUI.Parent = LP.PlayerGui
-
---==================================================
--- MAIN FRAME
---==================================================
-local Main = Instance.new("Frame", GUI)
-Main.Size = UDim2.new(0, 520, 0, 360)
-Main.Position = UDim2.new(0.5,-260,0.5,-180)
-Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
-Main.Visible = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0,12)
-
--- DRAG
-do
-    local dragging, dragStart, startPos
-    Main.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = i.Position
-            startPos = Main.Position
-        end
-    end)
-    UIS.InputChanged:Connect(function(i)
-        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = i.Position - dragStart
-            Main.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-    UIS.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
+--==============================
+-- TELEPORT LOGIC
+--==============================
+local function fastTeleport(cf)
+    getHRP().CFrame = cf + FAST_OFFSET
 end
 
---==================================================
--- TOP BAR
---==================================================
-local Top = Instance.new("Frame", Main)
-Top.Size = UDim2.new(1,0,0,36)
-Top.BackgroundColor3 = Color3.fromRGB(10,10,10)
+local function safeTeleport(cf)
+    local hrp = getHRP()
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {LP.Character}
+    params.FilterType = Enum.RaycastFilterType.Blacklist
 
-local Title = Instance.new("TextLabel", Top)
-Title.Size = UDim2.new(1,-80,1,0)
-Title.Position = UDim2.new(0,10,0,0)
-Title.Text = "AMS HUB - Fish It"
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
+    local origin = cf.Position + Vector3.new(0,120,0)
+    local direction = Vector3.new(0,-400,0)
+    local result = workspace:Raycast(origin, direction, params)
+
+    if result then
+        hrp.CFrame = CFrame.new(result.Position + Vector3.new(0,6,0))
+    else
+        hrp.CFrame = cf + Vector3.new(0,15,0)
+    end
+end
+
+local function doTeleport(cf)
+    if TeleportMode == "FAST" then
+        fastTeleport(cf)
+    else
+        safeTeleport(cf)
+    end
+end
+
+--==============================
+-- UI CREATION
+--==============================
+local gui = Instance.new("ScreenGui")
+gui.Name = "AmsHub"
+gui.ResetOnSpawn = false
+gui.Parent = LP:WaitForChild("PlayerGui")
+
+-- MAIN FRAME
+local Main = Instance.new("Frame", gui)
+Main.Size = UDim2.new(0, 520, 0, 340)
+Main.Position = UDim2.new(0.5,-260,0.5,-170)
+Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
+Main.Active = true
+Main.Draggable = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,12)
+
+-- TITLE BAR
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1,0,0,36)
+Title.Text = "AmsHub | Fish It"
 Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
 Title.BackgroundTransparency = 1
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.PaddingLeft = UDim.new(0,12)
 
--- MINIMIZE
-local MinBtn = Instance.new("TextButton", Top)
-MinBtn.Size = UDim2.new(0,30,0,30)
-MinBtn.Position = UDim2.new(1,-35,0,3)
-MinBtn.Text = "-"
-MinBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
-MinBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(1,0)
+-- SIDEBAR
+local Side = Instance.new("Frame", Main)
+Side.Position = UDim2.new(0,0,0,36)
+Side.Size = UDim2.new(0,140,1,-36)
+Side.BackgroundColor3 = Color3.fromRGB(20,20,20)
 
---==================================================
--- BUBBLE ICON
---==================================================
-local Bubble = Instance.new("TextButton", GUI)
-Bubble.Size = UDim2.new(0,48,0,48)
-Bubble.Position = UDim2.new(0,30,0.5,0)
-Bubble.Text = "AMS"
+-- CONTENT
+local Content = Instance.new("Frame", Main)
+Content.Position = UDim2.new(0,140,0,36)
+Content.Size = UDim2.new(1,-140,1,-36)
+Content.BackgroundColor3 = Color3.fromRGB(10,10,10)
+
+--==============================
+-- SIDEBAR BUTTON
+--==============================
+local TeleportBtn = Instance.new("TextButton", Side)
+TeleportBtn.Size = UDim2.new(1,-10,0,40)
+TeleportBtn.Position = UDim2.new(0,5,0,10)
+TeleportBtn.Text = "TELEPORT"
+TeleportBtn.Font = Enum.Font.GothamBold
+TeleportBtn.TextSize = 14
+TeleportBtn.TextColor3 = Color3.new(1,1,1)
+TeleportBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
+Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0,8)
+
+--==============================
+-- SEARCH BAR
+--==============================
+local Search = Instance.new("TextBox", Content)
+Search.Size = UDim2.new(1,-20,0,34)
+Search.Position = UDim2.new(0,10,0,10)
+Search.PlaceholderText = "Search location..."
+Search.Text = ""
+Search.ClearTextOnFocus = false
+Search.Font = Enum.Font.Gotham
+Search.TextSize = 14
+Search.TextColor3 = Color3.new(1,1,1)
+Search.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Instance.new("UICorner", Search).CornerRadius = UDim.new(0,8)
+
+--==============================
+-- MODE BUTTON
+--==============================
+local ModeBtn = Instance.new("TextButton", Content)
+ModeBtn.Size = UDim2.new(0,120,0,30)
+ModeBtn.Position = UDim2.new(1,-130,0,52)
+ModeBtn.Text = "MODE: SAFE"
+ModeBtn.Font = Enum.Font.GothamBold
+ModeBtn.TextSize = 12
+ModeBtn.TextColor3 = Color3.new(1,1,1)
+ModeBtn.BackgroundColor3 = Color3.fromRGB(90,0,0)
+Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0,8)
+
+ModeBtn.MouseButton1Click:Connect(function()
+    TeleportMode = (TeleportMode=="SAFE") and "FAST" or "SAFE"
+    ModeBtn.Text = "MODE: "..TeleportMode
+end)
+
+--==============================
+-- SCROLLING LIST
+--==============================
+local Scroll = Instance.new("ScrollingFrame", Content)
+Scroll.Position = UDim2.new(0,10,0,90)
+Scroll.Size = UDim2.new(1,-20,1,-100)
+Scroll.CanvasSize = UDim2.new(0,0,0,0)
+Scroll.ScrollBarImageTransparency = 0.2
+Scroll.BackgroundTransparency = 1
+
+local function rebuildList(filter)
+    Scroll:ClearAllChildren()
+
+    local layout = Instance.new("UIListLayout", Scroll)
+    layout.Padding = UDim.new(0,6)
+
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 10)
+    end)
+
+    for _,tp in ipairs(Teleports) do
+        if (not filter) or string.find(tp.name:lower(), filter:lower()) then
+            local b = Instance.new("TextButton", Scroll)
+            b.Size = UDim2.new(1,0,0,42)
+            b.Text = tp.name.."  ["..tp.cat.."]"
+            b.Font = Enum.Font.GothamBold
+            b.TextSize = 13
+            b.TextColor3 = Color3.new(1,1,1)
+            b.BackgroundColor3 = Color3.fromRGB(120,0,0)
+            Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+
+            b.MouseButton1Click:Connect(function()
+                doTeleport(tp.cf)
+            end)
+        end
+    end
+end
+
+TeleportBtn.MouseButton1Click:Connect(function()
+    rebuildList(Search.Text ~= "" and Search.Text or nil)
+end)
+
+Search:GetPropertyChangedSignal("Text"):Connect(function()
+    rebuildList(Search.Text ~= "" and Search.Text or nil)
+end)
+
+--==============================
+-- MINIMIZE TO BUBBLE
+--==============================
+local Bubble = Instance.new("TextButton", gui)
+Bubble.Size = UDim2.new(0,50,0,50)
+Bubble.Position = UDim2.new(0,20,0.5,-25)
+Bubble.Text = "A"
 Bubble.Visible = false
 Bubble.BackgroundColor3 = Color3.fromRGB(120,0,0)
 Bubble.TextColor3 = Color3.new(1,1,1)
+Bubble.Font = Enum.Font.GothamBold
+Bubble.TextSize = 18
+Bubble.Active = true
+Bubble.Draggable = true
 Instance.new("UICorner", Bubble).CornerRadius = UDim.new(1,0)
 
--- DRAG BUBBLE
-do
-    local dragging, dragStart, startPos
-    Bubble.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = i.Position
-            startPos = Bubble.Position
-        end
-    end)
-    UIS.InputChanged:Connect(function(i)
-        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = i.Position - dragStart
-            Bubble.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-    UIS.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-end
+local MinBtn = Instance.new("TextButton", Title)
+MinBtn.Size = UDim2.new(0,30,0,30)
+MinBtn.Position = UDim2.new(1,-40,0,3)
+MinBtn.Text = "-"
+MinBtn.BackgroundTransparency = 1
+MinBtn.TextColor3 = Color3.new(1,1,1)
 
 MinBtn.MouseButton1Click:Connect(function()
     Main.Visible = false
@@ -160,112 +245,20 @@ MinBtn.MouseButton1Click:Connect(function()
 end)
 
 Bubble.MouseButton1Click:Connect(function()
-    Main.Visible = true
     Bubble.Visible = false
+    Main.Visible = true
 end)
 
---==================================================
--- SIDEBAR
---==================================================
-local Side = Instance.new("Frame", Main)
-Side.Size = UDim2.new(0,120,1,-36)
-Side.Position = UDim2.new(0,0,0,36)
-Side.BackgroundColor3 = Color3.fromRGB(12,12,12)
-
-local TeleportBtn = Instance.new("TextButton", Side)
-TeleportBtn.Size = UDim2.new(1,-10,0,36)
-TeleportBtn.Position = UDim2.new(0,5,0,10)
-TeleportBtn.Text = "Teleport"
-TeleportBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
-TeleportBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0,8)
-
---==================================================
--- CONTENT
---==================================================
-local Content = Instance.new("Frame", Main)
-Content.Size = UDim2.new(1,-120,1,-36)
-Content.Position = UDim2.new(0,120,0,36)
-Content.BackgroundColor3 = Color3.fromRGB(18,18,18)
-
--- SEARCH BAR
-local Search = Instance.new("TextBox", Content)
-Search.Size = UDim2.new(1,-20,0,32)
-Search.Position = UDim2.new(0,10,0,10)
-Search.PlaceholderText = "Search location..."
-Search.Text = ""
-Search.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Search.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", Search).CornerRadius = UDim.new(0,8)
-
--- SCROLL
-local Scroll = Instance.new("ScrollingFrame", Content)
-Scroll.Position = UDim2.new(0,10,0,52)
-Scroll.Size = UDim2.new(1,-20,1,-62)
-Scroll.ScrollBarImageTransparency = 0.3
-Scroll.CanvasSize = UDim2.new(0,0,0,0)
-Scroll.AutomaticCanvasSize = Enum.AutomaticSize.None
-Scroll.BackgroundTransparency = 1
-
---==================================================
--- BUILD TELEPORT LIST (SAFE)
---==================================================
-local function buildList(filter)
-    Scroll:ClearAllChildren()
-
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0,8)
-    layout.Parent = Scroll
-
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 10)
-    end)
-
-    filter = filter and filter:lower() or ""
-
-    for category, places in pairs(Teleports) do
-        local header = Instance.new("TextLabel", Scroll)
-        header.Size = UDim2.new(1,0,0,26)
-        header.Text = category
-        header.Font = Enum.Font.GothamBold
-        header.TextSize = 13
-        header.TextXAlignment = Enum.TextXAlignment.Left
-        header.TextColor3 = Color3.fromRGB(255,80,80)
-        header.BackgroundTransparency = 1
-
-        for name, cf in pairs(places) do
-            if filter == "" or name:lower():find(filter) then
-                local b = Instance.new("TextButton", Scroll)
-                b.Size = UDim2.new(1,0,0,40)
-                b.Text = name
-                b.Font = Enum.Font.Gotham
-                b.TextSize = 14
-                b.BackgroundColor3 = Color3.fromRGB(120,0,0)
-                b.TextColor3 = Color3.new(1,1,1)
-                Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
-
-                b.MouseButton1Click:Connect(function()
-                    getHRP().CFrame = cf + SAFE_OFFSET
-                end)
-            end
-        end
-    end
-end
-
-TeleportBtn.MouseButton1Click:Connect(function()
-    buildList(Search.Text)
-end)
-
-Search:GetPropertyChangedSignal("Text"):Connect(function()
-    buildList(Search.Text)
-end)
-
---==================================================
+--==============================
 -- RIGHT SHIFT TOGGLE
---==================================================
-UIS.InputBegan:Connect(function(i, g)
-    if not g and i.KeyCode == Enum.KeyCode.RightShift then
+--==============================
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
         Main.Visible = not Main.Visible
-        Bubble.Visible = not Main.Visible
+        Bubble.Visible = false
     end
 end)
+
+-- INITIAL LOAD
+rebuildList()
