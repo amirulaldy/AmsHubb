@@ -85,7 +85,7 @@ Title.Text = "FISH IT TELEPORT HUB"
 Title.TextColor3 = Color3.new(1,1,1)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
-Title.TextXAlignment = Left
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Main
 
 -- Sidebar
