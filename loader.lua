@@ -8,5 +8,5 @@ local success, err = pcall(function()
 end)
 
 if not success then
-	warn("FishItHub failed to load:", err)
+	warn("AmsHubb failed to load:", err)
 end
