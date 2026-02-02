@@ -1,172 +1,198 @@
--- FishItHub Main FINAL
--- Sidebar Collapse | Full Map Teleport | Black & Red UI
+--// Main.lua - Fish It Teleport Hub
+--// Executor-ready LocalScript
 
-if game.CoreGui:FindFirstChild("AmsHubb V1") then
-	game.CoreGui.FishItHub:Destroy()
-end
-
+-- Services
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+
 local player = Players.LocalPlayer
-local isMobile = UIS.TouchEnabled
 
--- Anti AFK
-pcall(function()
-	for _,v in pairs(getconnections(player.Idled)) do
-		v:Disable()
-	end
-end)
-
--- GUI
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "FishItHub"
-gui.IgnoreGuiInset = true
-
--- Auto scale mobile
-local scale = Instance.new("UIScale", gui)
-scale.Scale = isMobile and 0.9 or 1
-
--- MAIN FRAME
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.fromScale(0.6, 0.48)
-main.Position = UDim2.fromScale(0.2, 0.26)
-main.BackgroundColor3 = Color3.fromRGB(0,0,0)
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0,14)
-
--- TITLE
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1,0,0,40)
-title.BackgroundTransparency = 1
-title.Text = "Fish It Hub"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextColor3 = Color3.new(1,1,1)
-
--- CLOSE
-local close = Instance.new("TextButton", main)
-close.Size = UDim2.new(0,40,0,40)
-close.Position = UDim2.new(1,-40,0,0)
-close.Text = "X"
-close.Font = Enum.Font.GothamBold
-close.TextSize = 18
-close.TextColor3 = Color3.fromRGB(255,60,60)
-close.BackgroundTransparency = 1
-
--- MINIMIZE BUBBLE
-local bubble = Instance.new("TextButton", gui)
-bubble.Size = UDim2.fromOffset(50,50)
-bubble.Position = UDim2.fromScale(0.05,0.5)
-bubble.Text = "🐟"
-bubble.TextSize = 22
-bubble.BackgroundColor3 = Color3.fromRGB(0,0,0)
-bubble.TextColor3 = Color3.fromRGB(255,60,60)
-bubble.Visible = false
-bubble.ZIndex = 5
-Instance.new("UICorner", bubble).CornerRadius = UDim.new(1,0)
-
-close.MouseButton1Click:Connect(function()
-	main.Visible = false
-	bubble.Visible = true
-end)
-
-bubble.MouseButton1Click:Connect(function()
-	main.Visible = true
-	bubble.Visible = false
-end)
-
--- SIDEBAR
-local side = Instance.new("Frame", main)
-side.Position = UDim2.new(0,0,0,40)
-side.Size = UDim2.new(0,180,1,-40)
-side.BackgroundColor3 = Color3.fromRGB(10,10,10)
-side.BorderSizePixel = 0
-
--- CONTENT
-local content = Instance.new("Frame", main)
-content.Position = UDim2.new(0,180,0,40)
-content.Size = UDim2.new(1,-180,1,-40)
-content.BackgroundTransparency = 1
-
--- COLLAPSE BUTTON
-local collapsed = false
-local collapseBtn = Instance.new("TextButton", side)
-collapseBtn.Size = UDim2.new(1,-20,0,32)
-collapseBtn.Position = UDim2.new(0,10,0,10)
-collapseBtn.Text = "<"
-collapseBtn.Font = Enum.Font.GothamBold
-collapseBtn.TextSize = 16
-collapseBtn.TextColor3 = Color3.new(1,1,1)
-collapseBtn.BackgroundColor3 = Color3.fromRGB(180,0,0)
-Instance.new("UICorner", collapseBtn).CornerRadius = UDim.new(0,8)
-
-local function toggleSidebar()
-	collapsed = not collapsed
-	local sideSize = collapsed and UDim2.new(0,50,1,-40) or UDim2.new(0,180,1,-40)
-	local contentPos = collapsed and UDim2.new(0,50,0,40) or UDim2.new(0,180,0,40)
-	local contentSize = collapsed and UDim2.new(1,-50,1,-40) or UDim2.new(1,-180,1,-40)
-
-	TweenService:Create(side, TweenInfo.new(0.25), {Size = sideSize}):Play()
-	TweenService:Create(content, TweenInfo.new(0.25), {
-		Position = contentPos,
-		Size = contentSize
-	}):Play()
-
-	collapseBtn.Text = collapsed and ">" or "<"
+-- Character helper
+local function getHRP()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:WaitForChild("HumanoidRootPart")
 end
 
-collapseBtn.MouseButton1Click:Connect(toggleSidebar)
-
--- TELEPORT DATA (Fish It – FULL MAP)
--- Jika ada spot meleset dikit, tinggal edit angka CFrame
+-- =========================
+-- TELEPORT LIST (EDIT HERE)
+-- =========================
 local Teleports = {
-	["Spawn"]        = CFrame.new(0, 70, 0),
-	["Ocean"]        = CFrame.new(220, 75, -180),
-	["Deep Ocean"]   = CFrame.new(480, 60, -620),
-	["Jungle"]       = CFrame.new(1180, 85, -460),
-	["Ancient Ruins"]= CFrame.new(1420, 90, -880),
-	["Volcano"]      = CFrame.new(-360, 95, 760),
-	["Ice Land"]     = CFrame.new(-980, 90, -240),
-	["Sky Island"]   = CFrame.new(0, 420, 0),
+    -- Starter
+    ["Fisherman Island"]      = CFrame.new(0, 0, 0),
+
+    -- Kohana Area
+    ["Kohana"]               = CFrame.new(0, 0, 0),
+    ["Kohana Volcano"]       = CFrame.new(0, 0, 0),
+    ["Volcano Cavern"]       = CFrame.new(0, 0, 0),
+
+    -- Ocean & Depths
+    ["Coral Reefs"]          = CFrame.new(0, 0, 0),
+    ["Esoteric Depths"]      = CFrame.new(0, 0, 0),
+    ["Crystal Depths"]       = CFrame.new(0, 0, 0),
+
+    -- Islands
+    ["Tropical Grove"]       = CFrame.new(0, 0, 0),
+    ["Creater Island"]       = CFrame.new(0, 0, 0),
+    ["Ancient Jungle"]       = CFrame.new(0, 0, 0),
+
+    -- Ruins & Temples
+    ["Sacred Temple"]        = CFrame.new(0, 0, 0),
+    ["Ancient Ruin"]         = CFrame.new(0, 0, 0),
+    ["Underground Cellar"]   = CFrame.new(0, 0, 0),
+
+    -- Pirate Area
+    ["Pirate Cove"]          = CFrame.new(0, 0, 0),
+    ["Pirate Treasure Room"] = CFrame.new(0, 0, 0),
+
+    -- Special / Secret
+    ["Treasure Room"]        = CFrame.new(0, 0, 0),
+    ["Sisyphus Statue"]      = CFrame.new(0, 0, 0),
 }
 
--- BUTTON CREATOR
-local function sideBtn(text, y, cf)
-	local b = Instance.new("TextButton", side)
-	b.Size = UDim2.new(1,-20,0,36)
-	b.Position = UDim2.new(0,10,0,y)
-	b.Text = collapsed and "" or text
-	b.Font = Enum.Font.Gotham
-	b.TextSize = 13
-	b.TextColor3 = Color3.new(1,1,1)
-	b.BackgroundColor3 = Color3.fromRGB(180,0,0)
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+-- =========================
+-- UI SETUP
+-- =========================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FishItHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
-	b.MouseButton1Click:Connect(function()
-		local char = player.Character
-		local hrp = char and char:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			hrp.CFrame = cf
-		end
-	end)
+-- Auto scale (mobile friendly)
+local UIScale = Instance.new("UIScale")
+UIScale.Parent = ScreenGui
+UIScale.Scale = UIS.TouchEnabled and 0.9 or 1
 
-	return b
+-- Main Frame
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 520, 0, 320)
+Main.Position = UDim2.new(0.5, -260, 0.5, -160)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = Main
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -12, 0, 40)
+Title.Position = UDim2.new(0, 6, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "FISH IT TELEPORT HUB"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.TextXAlignment = Left
+Title.Parent = Main
+
+-- Sidebar
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 150, 1, -40)
+Sidebar.Position = UDim2.new(0, 0, 0, 40)
+Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = Main
+
+-- Content Area (MAIN MENU)
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -150, 1, -40)
+Content.Position = UDim2.new(0, 150, 0, 40)
+Content.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+Content.BorderSizePixel = 0
+Content.Parent = Main
+
+-- Content Padding
+local Pad = Instance.new("UIPadding")
+Pad.PaddingTop = UDim.new(0, 10)
+Pad.PaddingLeft = UDim.new(0, 10)
+Pad.PaddingRight = UDim.new(0, 10)
+Pad.PaddingBottom = UDim.new(0, 10)
+Pad.Parent = Content
+
+-- =========================
+-- HELPERS
+-- =========================
+local function clearContent()
+    for _, v in ipairs(Content:GetChildren()) do
+        if not v:IsA("UIPadding") then
+            v:Destroy()
+        end
+    end
 end
 
--- CREATE TELEPORT BUTTONS
-local y = 52
-for name, cf in pairs(Teleports) do
-	sideBtn("TP "..name, y, cf)
-	y += 42
+local function createSidebarButton(text, y)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, -10, 0, 42)
+    b.Position = UDim2.new(0, 5, 0, y)
+    b.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+    b.Text = text
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.Parent = Sidebar
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 8)
+    c.Parent = b
+    return b
 end
 
--- RIGHT SHIFT TOGGLE (PC)
-UIS.InputBegan:Connect(function(i,g)
-	if g then return end
-	if i.KeyCode == Enum.KeyCode.RightShift then
-		main.Visible = not main.Visible
-	end
-end)
+local function createContentButton(text)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, 0, 0, 44)
+    b.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+    b.Text = text
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.AutoButtonColor = true
+    b.Parent = Content
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 8)
+    c.Parent = b
+    return b
+end
+
+-- =========================
+-- TELEPORT MENU (MAIN AREA)
+-- =========================
+local function openTeleportMenu()
+    clearContent()
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = Content
+
+    for name, cf in pairs(Teleports) do
+        local btn = createContentButton(name)
+        btn.MouseButton1Click:Connect(function()
+            local hrp = getHRP()
+            -- Safe teleport (anti nyemplung)
+            hrp.CFrame = cf + Vector3.new(0, 3, 0)
+        end)
+    end
+end
+
+-- =========================
+-- SIDEBAR (SINGLE BUTTON)
+-- =========================
+local TeleportBtn = createSidebarButton("Teleport", 10)
+TeleportBtn.MouseButton1Click:Connect(openTeleportMenu)
+
+-- Default content text
+do
+    clearContent()
+    local info = Instance.new("TextLabel")
+    info.Size = UDim2.new(1, 0, 1, 0)
+    info.BackgroundTransparency = 1
+    info.Text = "Klik 'Teleport' di sidebar\nuntuk memilih lokasi."
+    info.TextColor3 = Color3.fromRGB(200,200,200)
+    info.Font = Enum.Font.Gotham
+    info.TextSize = 14
+    info.TextWrapped = true
+    info.Parent = Content
+end
