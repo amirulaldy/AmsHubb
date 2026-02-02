@@ -110,7 +110,11 @@ Title.Font = Enum.Font.GothamBold
 Title.TextSize = 16
 Title.BackgroundTransparency = 1
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.PaddingLeft = UDim.new(0,12)
+
+local TitlePadding = Instance.new("UIPadding")
+TitlePadding.PaddingLeft = UDim.new(0,12)
+TitlePadding.Parent = Title
+
 
 -- SIDEBAR
 local Side = Instance.new("Frame", Main)
