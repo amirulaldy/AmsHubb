@@ -1,7 +1,7 @@
 -- FishItHub Main FINAL
 -- Sidebar Collapse | Full Map Teleport | Black & Red UI
 
-if game.CoreGui:FindFirstChild("FishItHub") then
+if game.CoreGui:FindFirstChild("AmsHubb V1") then
 	game.CoreGui.FishItHub:Destroy()
 end
 
