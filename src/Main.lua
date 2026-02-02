@@ -1,7 +1,7 @@
---// AmsHub Fish It
+--// AmsHubb Fish It
 --// GitHub Ready | No Autofarm | Mobile Safe
 
-if game.CoreGui:FindFirstChild("AmsHub") then
+if game.CoreGui:FindFirstChild("AmsHubb") then
 	game.CoreGui.AmsHub:Destroy()
 end
 
