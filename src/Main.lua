@@ -22,11 +22,11 @@ local SAFE_OFFSET = Vector3.new(0, 5, 0)
 --==================================================
 local Teleports = {
     Island = {
-        ["Fisherman Island"] = CFrame.new(0,0,0),
+        ["Fisherman Island"] = CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875),
         ["Kohana"] = CFrame.new(0,0,0),
-        ["Kohana Volcano"] = CFrame.new(0,0,0),
+        ["Kohana Volcano"] = CFrame.new(-424.22802734375, 7.2453107833862305, 123.47695922851562),
         ["Tropical Grove"] = CFrame.new(0,0,0),
-        ["Pirate Cove"] = CFrame.new(0,0,0),
+        ["Pirate Cove"] = CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625),
         ["Creater Island"] = CFrame.new(0,0,0),
     },
     Depth = {
@@ -41,7 +41,7 @@ local Teleports = {
         ["Pirate Treasure Room"] = CFrame.new(0,0,0),
         ["Ancient Jungle"] = CFrame.new(0,0,0),
         ["Sacred Temple"] = CFrame.new(0,0,0),
-        ["Ancient Ruin"] = CFrame.new(0,0,0),
+        ["Ancient Ruin"] = CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875),
         ["Sisyphus Statue"] = CFrame.new(0,0,0),
     }
 }
