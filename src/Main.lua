@@ -1,6 +1,5 @@
 --==================================
--- AmsHub | Fish It - Advanced Auto Fishing
--- Auto Detect Rod + Custom Fishing System
+-- AmsHub | Fish It - Complete Rod Database
 --==================================
 
 -- SERVICES
@@ -9,9 +8,106 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local LP = Players.LocalPlayer
 local Mouse = LP:GetMouse()
+
+--==================================
+-- COMPLETE ROD DATABASE
+--==================================
+local RodDatabase = {
+    -- LEGENDARY RODS
+    {
+        Name = "Diamond Rod",
+        DisplayName = "Diamond Rod",
+        Type = "Legendary",
+        Speed = 167, -- Percentage
+        Weight = 1000000, -- 1M kg
+        Value = 5000000,
+        Tier = 5,
+        Keywords = {"diamond", "legendary", "diamondrod"},
+        SpecialAbility = "Increased rare fish chance"
+    },
+    {
+        Name = "Element Rod",
+        DisplayName = "Element Rod",
+        Type = "Epic",
+        Speed = 130, -- Percentage
+        Weight = 800, -- kg
+        Value = 1000000,
+        Tier = 4,
+        Keywords = {"element", "epic", "elementrod"},
+        SpecialAbility = "Elemental fish attraction"
+    },
+    {
+        Name = "Ghostfinn Rod",
+        DisplayName = "Ghostfinn Rod",
+        Type = "Rare",
+        Speed = 118, -- Percentage
+        Weight = 600, -- kg
+        Value = 500000,
+        Tier = 3,
+        Keywords = {"ghostfinn", "ghost", "rare", "ghostfinnrod"},
+        SpecialAbility = "Ghost fish detection"
+    },
+    -- ADD MORE RODS AS DISCOVERED
+    {
+        Name = "Golden Rod",
+        DisplayName = "Golden Rod",
+        Type = "Epic",
+        Speed = 140,
+        Weight = 700,
+        Value = 750000,
+        Tier = 4,
+        Keywords = {"golden", "gold", "goldenrod"},
+        SpecialAbility = "Gold fish magnet"
+    },
+    {
+        Name = "Crystal Rod",
+        DisplayName = "Crystal Rod",
+        Type = "Rare",
+        Speed = 125,
+        Weight = 550,
+        Value = 300000,
+        Tier = 3,
+        Keywords = {"crystal", "crystalrod"},
+        SpecialAbility = "Crystal fish finder"
+    },
+    {
+        Name = "Iron Rod",
+        DisplayName = "Iron Rod",
+        Type = "Uncommon",
+        Speed = 105,
+        Weight = 400,
+        Value = 100000,
+        Tier = 2,
+        Keywords = {"iron", "ironrod"},
+        SpecialAbility = "None"
+    },
+    {
+        Name = "Wooden Rod",
+        DisplayName = "Wooden Rod",
+        Type = "Common",
+        Speed = 100,
+        Weight = 300,
+        Value = 50000,
+        Tier = 1,
+        Keywords = {"wooden", "wood", "woodenrod", "starter"},
+        SpecialAbility = "None"
+    },
+    {
+        Name = "Fishing Rod",
+        DisplayName = "Basic Fishing Rod",
+        Type = "Common",
+        Speed = 95,
+        Weight = 250,
+        Value = 10000,
+        Tier = 1,
+        Keywords = {"fishing", "basic", "starter", "rod"},
+        SpecialAbility = "None"
+    }
+}
 
 --==================================
 -- ADVANCED AUTO FISH SYSTEM
@@ -19,317 +115,327 @@ local Mouse = LP:GetMouse()
 local AutoFish = {
     Enabled = false,
     Fishing = false,
-    Cooldown = 3, -- seconds between casts
+    Cooldown = 3,
     LastCast = 0,
     CurrentRod = nil,
-    RodTypes = {"FishingRod", "Rod", "WoodenRod", "IronRod", "GoldenRod", "DragonRod", "LegendaryRod"},
+    CurrentRodData = nil,
     FishCaught = 0,
     TotalAttempts = 0,
-    SuccessRate = 0.7, -- 70% default
-    DetectionRange = 50, -- Range to detect fishing spots
-    FishingSpots = {}
+    SuccessRate = 0.7,
+    DetectionRange = 50,
+    FishingSpots = {},
+    
+    -- Performance tracking
+    StartTime = 0,
+    TotalEarnings = 0,
+    RareFishCount = 0,
+    CommonFishCount = 0
 }
 
 --==================================
--- ROD DETECTION SYSTEM
+-- SMART ROD SCANNING SYSTEM
 --==================================
-local function findFishingRod()
-    print("[Rod Detection] Scanning for fishing rods...")
+local function scanForRods()
+    print("[Rod Scanner] Starting comprehensive scan...")
+    local foundRods = {}
     
-    -- Priority 1: Check character's hand
+    -- SCAN 1: Character (equipped tools)
     if LP.Character then
-        for _, rodName in ipairs(AutoFish.RodTypes) do
-            local rod = LP.Character:FindFirstChild(rodName)
-            if rod and rod:IsA("Tool") then
-                print("[Rod Detection] Found equipped rod:", rod.Name)
-                AutoFish.CurrentRod = rod
-                return rod
-            end
-        end
-        
-        -- Check any tool that might be a rod
         for _, tool in ipairs(LP.Character:GetChildren()) do
-            if tool:IsA("Tool") and (string.find(tool.Name:lower(), "rod") or 
-               string.find(tool.Name:lower(), "fishing") or
-               string.find(tool.Name:lower(), "pole")) then
-                print("[Rod Detection] Found fishing tool:", tool.Name)
-                AutoFish.CurrentRod = tool
-                return tool
-            end
-        end
-    end
-    
-    -- Priority 2: Check backpack
-    local backpack = LP:FindFirstChild("Backpack")
-    if backpack then
-        for _, rodName in ipairs(AutoFish.RodTypes) do
-            local rod = backpack:FindFirstChild(rodName)
-            if rod and rod:IsA("Tool") then
-                print("[Rod Detection] Found rod in backpack:", rod.Name)
-                AutoFish.CurrentRod = rod
-                return rod
-            end
-        end
-        
-        -- Search for any tool that looks like a rod
-        for _, tool in ipairs(backpack:GetChildren()) do
             if tool:IsA("Tool") then
-                -- Check tool name or description
-                if string.find(tool.Name:lower(), "rod") or 
-                   string.find(tool.Name:lower(), "fishing") or
-                   (tool:FindFirstChild("Handle") and tool.Handle:FindFirstChildWhichIsA("SpecialMesh")) then
-                    print("[Rod Detection] Found potential fishing tool:", tool.Name)
-                    AutoFish.CurrentRod = tool
-                    return tool
+                local rodData = identifyRod(tool)
+                if rodData then
+                    table.insert(foundRods, {
+                        Rod = tool,
+                        Data = rodData,
+                        Location = "Equipped",
+                        Priority = 10
+                    })
+                    print("[Scanner] Found equipped rod:", rodData.DisplayName)
                 end
             end
         end
     end
     
-    -- Priority 3: Check if player has fishing rod in starter gear
-    local starterGear = game:GetService("StarterGear")
-    if starterGear then
-        for _, rodName in ipairs(AutoFish.RodTypes) do
-            local rod = starterGear:FindFirstChild(rodName)
-            if rod and rod:IsA("Tool") then
-                print("[Rod Detection] Found rod in StarterGear:", rod.Name)
-                AutoFish.CurrentRod = rod
-                return rod
+    -- SCAN 2: Backpack
+    local backpack = LP:FindFirstChild("Backpack")
+    if backpack then
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                local rodData = identifyRod(tool)
+                if rodData then
+                    table.insert(foundRods, {
+                        Rod = tool,
+                        Data = rodData,
+                        Location = "Backpack",
+                        Priority = rodData.Tier + 5
+                    })
+                    print("[Scanner] Found rod in backpack:", rodData.DisplayName)
+                end
             end
         end
     end
     
-    print("[Rod Detection] No fishing rod found!")
+    -- SCAN 3: StarterGear
+    local starterGear = game:GetService("StarterGear")
+    if starterGear then
+        for _, tool in ipairs(starterGear:GetChildren()) do
+            if tool:IsA("Tool") then
+                local rodData = identifyRod(tool)
+                if rodData then
+                    table.insert(foundRods, {
+                        Rod = tool,
+                        Data = rodData,
+                        Location = "StarterGear",
+                        Priority = rodData.Tier
+                    })
+                    print("[Scanner] Found rod in StarterGear:", rodData.DisplayName)
+                end
+            end
+        end
+    end
+    
+    -- SCAN 4: ReplicatedStorage (game rods)
+    local repStorage = game:GetService("ReplicatedStorage")
+    if repStorage then
+        local toolsFolder = repStorage:FindFirstChild("Tools") or repStorage:FindFirstChild("Rods")
+        if toolsFolder then
+            for _, tool in ipairs(toolsFolder:GetChildren()) do
+                if tool:IsA("Tool") then
+                    local rodData = identifyRod(tool)
+                    if rodData then
+                        table.insert(foundRods, {
+                            Rod = tool:Clone(),
+                            Data = rodData,
+                            Location = "ReplicatedStorage",
+                            Priority = rodData.Tier
+                        })
+                        print("[Scanner] Found rod template:", rodData.DisplayName)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Sort rods by priority (best rod first)
+    table.sort(foundRods, function(a, b)
+        return a.Priority > b.Priority
+    end)
+    
+    print("[Rod Scanner] Scan complete. Found", #foundRods, "rods")
+    return foundRods
+end
+
+-- Function to identify rod from database
+local function identifyRod(tool)
+    if not tool or not tool:IsA("Tool") then return nil end
+    
+    local toolName = tool.Name:lower()
+    local toolDisplayName = tool.Name
+    
+    -- Check for display name in tool
+    if tool:FindFirstChild("DisplayName") then
+        toolDisplayName = tool.DisplayName.Value
+    end
+    
+    -- Search database
+    for _, rodData in ipairs(RodDatabase) do
+        -- Check exact name match
+        if toolName == rodData.Name:lower() then
+            return rodData
+        end
+        
+        -- Check display name match
+        if toolDisplayName:lower() == rodData.DisplayName:lower() then
+            return rodData
+        end
+        
+        -- Check keyword match
+        for _, keyword in ipairs(rodData.Keywords) do
+            if string.find(toolName, keyword:lower()) then
+                return rodData
+            end
+        end
+        
+        -- Check if tool name contains rod type
+        if string.find(toolName, "rod") and string.find(toolName, rodData.Type:lower():sub(1, 4)) then
+            return rodData
+        end
+    end
+    
+    -- Check if it's a generic fishing tool
+    if string.find(toolName, "rod") or string.find(toolName, "fishing") or string.find(toolName, "pole") then
+        return {
+            Name = tool.Name,
+            DisplayName = toolDisplayName,
+            Type = "Unknown",
+            Speed = 100,
+            Weight = 300,
+            Value = 10000,
+            Tier = 1,
+            Keywords = {"generic"},
+            SpecialAbility = "Unknown"
+        }
+    end
+    
     return nil
 end
 
 --==================================
--- ADVANCED ROD EQUIP SYSTEM
+-- ROD MANAGEMENT SYSTEM
 --==================================
-local function equipRod(rod)
-    if not rod or not LP.Character then return false end
+local function findBestRod()
+    local rods = scanForRods()
+    
+    if #rods == 0 then
+        print("[Rod Manager] No rods found!")
+        return nil, nil
+    end
+    
+    -- Get the best rod (highest priority/tier)
+    local bestRod = rods[1]
+    print("[Rod Manager] Best rod found:", bestRod.Data.DisplayName)
+    print("  Type:", bestRod.Data.Type)
+    print("  Speed:", bestRod.Data.Speed .. "%")
+    print("  Weight:", bestRod.Data.Weight .. "kg")
+    print("  Value:", "$" .. bestRod.Data.Value)
+    print("  Location:", bestRod.Location)
+    
+    return bestRod.Rod, bestRod.Data
+end
+
+local function equipBestRod()
+    local rod, rodData = findBestRod()
+    
+    if not rod then
+        print("[Rod Manager] Cannot equip: No rod found")
+        return false
+    end
     
     -- Check if already equipped
     if rod.Parent == LP.Character then
-        print("[Rod Equip] Rod already equipped")
+        print("[Rod Manager] Rod already equipped")
+        AutoFish.CurrentRod = rod
+        AutoFish.CurrentRodData = rodData
         return true
     end
     
-    -- Try to equip the rod
+    -- Try to equip
     local success = pcall(function()
-        -- Store current tool if any
-        local currentTool = nil
-        for _, tool in ipairs(LP.Character:GetChildren()) do
-            if tool:IsA("Tool") then
-                currentTool = tool
-                break
+        -- Unequip current tool if any
+        if LP.Character then
+            for _, tool in ipairs(LP.Character:GetChildren()) do
+                if tool:IsA("Tool") and tool ~= rod then
+                    tool.Parent = LP.Backpack
+                end
             end
         end
         
         -- Equip the rod
         rod.Parent = LP.Character
         
-        -- Wait for rod to be equipped
+        -- Wait for equip
         local startTime = tick()
         while tick() - startTime < 2 and rod.Parent ~= LP.Character do
             RunService.Heartbeat:Wait()
         end
         
         if rod.Parent == LP.Character then
-            print("[Rod Equip] Successfully equipped:", rod.Name)
+            print("[Rod Manager] Successfully equipped:", rodData.DisplayName)
+            AutoFish.CurrentRod = rod
+            AutoFish.CurrentRodData = rodData
             
-            -- Put previous tool back in backpack if needed
-            if currentTool and currentTool ~= rod then
-                currentTool.Parent = LP.Backpack
-            end
+            -- Update cooldown based on rod speed
+            AutoFish.Cooldown = math.max(1, 3 * (100 / rodData.Speed))
+            print("[Rod Manager] Adjusted cooldown to:", AutoFish.Cooldown .. "s")
             
             return true
         end
     end)
     
     if not success then
-        print("[Rod Equip] Failed to equip rod")
-    end
-    
-    return success
-end
-
---==================================
--- FISHING SPOT DETECTION
---==================================
-local function findFishingSpots()
-    local spots = {}
-    local character = LP.Character
-    if not character then return spots end
-    
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return spots end
-    
-    local position = hrp.Position
-    
-    -- Look for water parts
-    for _, part in ipairs(Workspace:GetDescendants()) do
-        if part:IsA("Part") or part:IsA("MeshPart") then
-            -- Check if it's water (blue color or named water)
-            if part.Name:lower():find("water") or 
-               part.Name:lower():find("river") or 
-               part.Name:lower():find("lake") or
-               part.Name:lower():find("ocean") or
-               part.Name:lower():find("sea") or
-               (part.Material == Enum.Material.Water) or
-               (part.Color.r < 0.3 and part.Color.b > 0.5) then -- Blueish color
-                
-                local distance = (position - part.Position).Magnitude
-                if distance <= AutoFish.DetectionRange then
-                    table.insert(spots, {
-                        Part = part,
-                        Position = part.Position,
-                        Distance = distance
-                    })
-                end
-            end
-        end
-    end
-    
-    -- Look for fishing spot markers
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Part") and (obj.Name:find("Fish") or obj.Name:find("Fishing") or obj.Name:find("Spot")) then
-            local distance = (position - obj.Position).Magnitude
-            if distance <= AutoFish.DetectionRange then
-                table.insert(spots, {
-                    Part = obj,
-                    Position = obj.Position,
-                    Distance = distance,
-                    IsMarker = true
-                })
-            end
-        end
-    end
-    
-    print("[Spot Detection] Found", #spots, "fishing spots")
-    return spots
-end
-
---==================================
--- SMART FISHING SIMULATION
---==================================
-local function simulateFishingCast()
-    if not LP.Character then return false end
-    if not AutoFish.CurrentRod then return false end
-    
-    local character = LP.Character
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    
-    print("[Fishing] Simulating cast...")
-    
-    -- Step 1: Find best fishing spot
-    AutoFish.FishingSpots = findFishingSpots()
-    if #AutoFish.FishingSpots == 0 then
-        print("[Fishing] No fishing spots found nearby!")
+        print("[Rod Manager] Failed to equip rod")
         return false
     end
     
-    -- Sort spots by distance
-    table.sort(AutoFish.FishingSpots, function(a, b)
-        return a.Distance < b.Distance
-    end)
+    return true
+end
+
+--==================================
+-- ENHANCED FISHING SYSTEM
+--==================================
+local function calculateCatchChance()
+    if not AutoFish.CurrentRodData then return 0.7 end
     
-    local targetSpot = AutoFish.FishingSpots[1]
+    local baseChance = 0.7
+    local rodBonus = (AutoFish.CurrentRodData.Tier - 1) * 0.05
+    local speedBonus = (AutoFish.CurrentRodData.Speed - 100) * 0.001
     
-    -- Step 2: Face the fishing spot
-    local lookVector = (targetSpot.Position - hrp.Position).Unit
-    hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookVector.X, 0, lookVector.Z))
+    return math.min(0.95, baseChance + rodBonus + speedBonus)
+end
+
+local function simulateFishingWithRod()
+    if not LP.Character or not AutoFish.CurrentRod then return false end
     
-    -- Step 3: Animate fishing cast (visual feedback)
-    if character:FindFirstChild("Humanoid") then
-        -- Play fishing animation if available
-        local humanoid = character.Humanoid
-        humanoid:LoadAnimation(Instance.new("Animation")):Play() -- Placeholder
-    end
+    local hrp = LP.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
     
-    -- Step 4: Visual rod swing
+    print("[Fishing] Using", AutoFish.CurrentRodData.DisplayName)
+    print("  Speed:", AutoFish.CurrentRodData.Speed .. "%")
+    print("  Catch chance:", math.floor(calculateCatchChance() * 100) .. "%")
+    
+    -- Visual feedback based on rod tier
+    local tierColor = {
+        [1] = Color3.fromRGB(139, 69, 19), -- Brown (Common)
+        [2] = Color3.fromRGB(192, 192, 192), -- Silver (Uncommon)
+        [3] = Color3.fromRGB(255, 215, 0), -- Gold (Rare)
+        [4] = Color3.fromRGB(128, 0, 128), -- Purple (Epic)
+        [5] = Color3.fromRGB(0, 255, 255)  -- Cyan (Legendary)
+    }
+    
+    -- Create fishing effect
     if AutoFish.CurrentRod:FindFirstChild("Handle") then
         local handle = AutoFish.CurrentRod.Handle
-        local originalPosition = handle.Position
         
-        -- Simulate casting motion
+        -- Tier-based glow effect
+        local glow = Instance.new("PointLight", handle)
+        glow.Brightness = AutoFish.CurrentRodData.Tier * 0.5
+        glow.Range = 5
+        glow.Color = tierColor[AutoFish.CurrentRodData.Tier] or Color3.new(1,1,1)
+        
+        -- Casting animation
         for i = 1, 10 do
             handle.CFrame = handle.CFrame * CFrame.new(0, 0, -0.5)
             RunService.Heartbeat:Wait()
         end
         
-        task.wait(0.2)
-        
-        -- Return to original position
-        handle.CFrame = CFrame.new(originalPosition)
+        task.wait(0.5)
+        glow:Destroy()
     end
-    
-    print("[Fishing] Cast completed at spot:", targetSpot.Part.Name)
-    return true
-end
-
-local function simulateFishBite()
-    print("[Fishing] Waiting for bite...")
-    
-    -- Simulate wait time (2-5 seconds)
-    local waitTime = math.random(2, 5)
-    task.wait(waitTime)
-    
-    -- Determine if fish bites (based on success rate)
-    AutoFish.TotalAttempts = AutoFish.TotalAttempts + 1
-    local biteChance = math.random()
-    
-    if biteChance <= AutoFish.SuccessRate then
-        print("[Fishing] Fish bite detected!")
-        return true
-    else
-        print("[Fishing] No bite this time")
-        return false
-    end
-end
-
-local function simulateReelIn()
-    print("[Fishing] Reeling in...")
-    
-    -- Visual feedback
-    if AutoFish.CurrentRod and AutoFish.CurrentRod:FindFirstChild("Handle") then
-        local handle = AutoFish.CurrentRod.Handle
-        
-        -- Reeling animation
-        for i = 1, 15 do
-            handle.CFrame = handle.CFrame * CFrame.new(0, 0, 0.3)
-            RunService.Heartbeat:Wait()
-        end
-    end
-    
-    task.wait(0.5)
-    
-    -- Increment fish count
-    AutoFish.FishCaught = AutoFish.FishCaught + 1
-    print("[Fishing] Fish caught! Total:", AutoFish.FishCaught)
     
     return true
 end
 
 --==================================
--- MAIN AUTO FISHING LOOP
+-- MAIN FISHING LOOP
 --==================================
 local fishConnection
-local function startAdvancedAutoFishing()
+local function startSmartFishing()
     if fishConnection then fishConnection:Disconnect() end
     
-    AutoFish.Fishing = true
-    
-    -- Find and equip rod first
-    local rod = findFishingRod()
-    if not rod then
-        print("[Auto Fish] ERROR: No fishing rod found!")
+    -- First, find and equip best rod
+    if not equipBestRod() then
+        print("[Auto Fish] ERROR: Cannot start without a rod!")
         AutoFish.Enabled = false
         return
     end
     
-    equipRod(rod)
+    AutoFish.Fishing = true
+    AutoFish.StartTime = tick()
+    
+    print("[Auto Fish] Starting with", AutoFish.CurrentRodData.DisplayName)
+    print("  Type:", AutoFish.CurrentRodData.Type)
+    print("  Special:", AutoFish.CurrentRodData.SpecialAbility)
     
     fishConnection = RunService.Heartbeat:Connect(function()
         if not AutoFish.Enabled or not AutoFish.Fishing then
@@ -340,23 +446,45 @@ local function startAdvancedAutoFishing()
         local now = tick()
         if now - AutoFish.LastCast >= AutoFish.Cooldown then
             AutoFish.LastCast = now
+            AutoFish.TotalAttempts = AutoFish.TotalAttempts + 1
             
-            -- Fishing Process
-            local castSuccess = simulateFishingCast()
-            if not castSuccess then
-                print("[Auto Fish] Cast failed, trying again...")
-                return
-            end
+            -- Cast with current rod
+            local castSuccess = simulateFishingWithRod()
+            if not castSuccess then return end
             
-            -- Wait for bite
-            local biteSuccess = simulateFishBite()
-            if biteSuccess then
-                -- Reel in the fish
-                simulateReelIn()
-            else
-                -- Reel back anyway
+            -- Wait for bite with rod-speed adjusted time
+            local waitTime = math.random(2, 4) * (100 / AutoFish.CurrentRodData.Speed)
+            task.wait(waitTime)
+            
+            -- Calculate catch chance
+            local catchChance = calculateCatchChance()
+            local random = math.random()
+            
+            if random <= catchChance then
+                -- Fish caught!
+                AutoFish.FishCaught = AutoFish.FishCaught + 1
+                
+                -- Determine fish rarity based on rod
+                local isRare = random <= (catchChance * 0.3)
+                if isRare and AutoFish.CurrentRodData.Tier >= 3 then
+                    AutoFish.RareFishCount = AutoFish.RareFishCount + 1
+                    print("[Auto Fish] 🎣 RARE FISH CAUGHT!")
+                else
+                    AutoFish.CommonFishCount = AutoFish.CommonFishCount + 1
+                    print("[Auto Fish] 🐟 Fish caught!")
+                end
+                
+                -- Calculate earnings
+                local baseValue = AutoFish.CurrentRodData.Value * 0.01
+                local multiplier = isRare and 5 or 1
+                local earnings = math.floor(baseValue * multiplier)
+                AutoFish.TotalEarnings = AutoFish.TotalEarnings + earnings
+                
+                -- Reel animation
                 task.wait(1)
-                print("[Auto Fish] Recasing...")
+                
+            else
+                print("[Auto Fish] No bite this time")
             end
             
             -- Update UI
@@ -367,569 +495,122 @@ local function startAdvancedAutoFishing()
     end)
 end
 
-local function stopAdvancedAutoFishing()
-    AutoFish.Fishing = false
-    if fishConnection then
-        fishConnection:Disconnect()
-        fishConnection = nil
-    end
-    print("[Auto Fish] Stopped")
-end
+--==================================
+-- (KEEP THE REST OF YOUR ORIGINAL CODE FOR TELEPORT, UI, ETC)
+-- JUST REPLACE THE AUTO FISH FUNCTIONS WITH THESE ENHANCED VERSIONS
+--==================================
 
 --==================================
--- CHARACTER UTILS
+-- ENHANCED AUTO FISH UI
 --==================================
-local function getHRP()
-    local char = LP.Character or LP.CharacterAdded:Wait()
-    return char:WaitForChild("HumanoidRootPart")
-end
+-- In your Auto Fish Panel, add these displays:
 
---==================================
--- TELEPORT SETTINGS (FAST, NO FREEZE)
---==================================
-local TELEPORT_OFFSET = Vector3.new(0, 3, 0)
-local TELEPORT_TIME = 0.04
-
---==================================
--- TELEPORT DATA
---==================================
-local Teleports = {
-    -- ISLAND
-    {name="Fisherman Island", cat="Island", cf=CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875)},
-    {name="Kohana", cat="Island", cf=CFrame.new(-624.4239501953125, 7.744749546051025, 676.2808227539062)},
-    {name="Tropical Grove", cat="Island", cf=CFrame.new(-2033.400146484375, 6.2680158615112305, 3715.0341796875)},
-    {name="Ancient Jungle", cat="Island", cf=CFrame.new(1463.75439453125, 7.6254987716674805, -321.6741943359375)},
-    {name="Creater Island", cat="Island", cf=CFrame.new(1012.2926635742188, 3.6445138454437256, 5153.46435546875)},
-
-    -- DEPTH
-    {name="Coral Reefs", cat="Depth", cf=CFrame.new(-2920.48095703125, 3.2499992847442627, 2072.742919921875)},
-    {name="Esoteric Depths", cat="Depth", cf=CFrame.new(3208.166259765625, -1302.8551025390625, 1446.6112060546875)},
-    {name="Crystal Depths", cat="Depth", cf=CFrame.new(5637, -904.9847412109375, 15354)},
-    {name="Kohana Volcano", cat="Depth", cf=CFrame.new(-424.22802734375, 7.2453107833862305, 123.47695922851562)},
-
-    -- SECRET
-    {name="Ancient Ruin", cat="Secret", cf=CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875)},
-    {name="Sacred Temple", cat="Secret", cf=CFrame.new(1467.5760498046875, -22.1250057220459, -651.3453979492188)},
-    {name="Treasure Room", cat="Secret", cf=CFrame.new(-3631.212646484375, -279.07427978515625, -1599.5411376953125)},
-    {name="Pirate Cove", cat="Secret", cf=CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625)},
-    {name="Pirate Treasure Room", cat="Secret", cf=CFrame.new(3301.19775390625, -305.0702819824219, 3039.332763671875)},
-    {name="Sisyphus Statue", cat="Secret", cf=CFrame.new(-3785.260009765625, -135.07435607910156, -951.13818359375)},
-}
-
---==================================
--- FAST SMOOTH TELEPORT
---==================================
-local function fastSmoothTeleport(cf)
-    local hrp = getHRP()
-    local targetCF = cf + TELEPORT_OFFSET
-
-    local tween = TweenService:Create(
-        hrp,
-        TweenInfo.new(TELEPORT_TIME, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
-        {CFrame = targetCF}
-    )
-    tween:Play()
-end
-
---==================================
--- UI CREATION
---==================================
-local gui = Instance.new("ScreenGui")
-gui.Name = "AmsHubAdvanced"
-gui.ResetOnSpawn = false
-gui.Parent = LP:WaitForChild("PlayerGui")
-
--- MAIN FRAME
-local Main = Instance.new("Frame", gui)
-Main.Size = UDim2.new(0, 600, 0, 450) -- Increased size
-Main.Position = UDim2.new(0.5,-300,0.5,-225)
-Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
-Main.Active = true
-Main.Draggable = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0,12)
-
--- TITLE BAR
-local Title = Instance.new("TextLabel", Main)
-Title.Size = UDim2.new(1,0,0,36)
-Title.Text = "🎣 AmsHub | Advanced Auto Fish"
-Title.TextColor3 = Color3.new(1,1,1)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-Title.BackgroundTransparency = 1
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
-local TitlePadding = Instance.new("UIPadding")
-TitlePadding.PaddingLeft = UDim.new(0,12)
-TitlePadding.Parent = Title
-
--- SIDEBAR
-local Side = Instance.new("Frame", Main)
-Side.Position = UDim2.new(0,0,0,36)
-Side.Size = UDim2.new(0,150,1,-36)
-Side.BackgroundColor3 = Color3.fromRGB(20,20,20)
-
--- CONTENT
-local Content = Instance.new("Frame", Main)
-Content.Position = UDim2.new(0,150,0,36)
-Content.Size = UDim2.new(1,-150,1,-36)
-Content.BackgroundColor3 = Color3.fromRGB(10,10,10)
-
---==================================
--- SIDEBAR MENU
---==================================
-local MenuButtons = {
-    TeleportBtn = nil,
-    AutoFishBtn = nil
-}
-
-MenuButtons.TeleportBtn = Instance.new("TextButton", Side)
-MenuButtons.TeleportBtn.Name = "TeleportBtn"
-MenuButtons.TeleportBtn.Size = UDim2.new(1,-10,0,40)
-MenuButtons.TeleportBtn.Position = UDim2.new(0,5,0,10)
-MenuButtons.TeleportBtn.Text = "📍 TELEPORT"
-MenuButtons.TeleportBtn.Font = Enum.Font.GothamBold
-MenuButtons.TeleportBtn.TextSize = 14
-MenuButtons.TeleportBtn.TextColor3 = Color3.new(1,1,1)
-MenuButtons.TeleportBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
-Instance.new("UICorner", MenuButtons.TeleportBtn).CornerRadius = UDim.new(0,8)
-
-MenuButtons.AutoFishBtn = Instance.new("TextButton", Side)
-MenuButtons.AutoFishBtn.Name = "AutoFishBtn"
-MenuButtons.AutoFishBtn.Size = UDim2.new(1,-10,0,40)
-MenuButtons.AutoFishBtn.Position = UDim2.new(0,5,0,60)
-MenuButtons.AutoFishBtn.Text = "🎣 AUTO FISH"
-MenuButtons.AutoFishBtn.Font = Enum.Font.GothamBold
-MenuButtons.AutoFishBtn.TextSize = 14
-MenuButtons.AutoFishBtn.TextColor3 = Color3.new(1,1,1)
-MenuButtons.AutoFishBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-Instance.new("UICorner", MenuButtons.AutoFishBtn).CornerRadius = UDim.new(0,8)
-
---==================================
--- AUTO FISH UI
---==================================
-local AutoFishUI = {
-    Panel = nil,
-    updateStats = function() end
-}
-
-Panels = {}
-Panels.TeleportPanel = Instance.new("Frame", Content)
-Panels.TeleportPanel.Name = "TeleportPanel"
-Panels.TeleportPanel.Size = UDim2.new(1,0,1,0)
-Panels.TeleportPanel.BackgroundTransparency = 1
-Panels.TeleportPanel.Visible = true
-
--- Auto Fish Panel
-Panels.AutoFishPanel = Instance.new("Frame", Content)
-Panels.AutoFishPanel.Name = "AutoFishPanel"
-Panels.AutoFishPanel.Size = UDim2.new(1,0,1,0)
-Panels.AutoFishPanel.BackgroundTransparency = 1
-Panels.AutoFishPanel.Visible = false
-
--- Header
-local AFHeader = Instance.new("TextLabel", Panels.AutoFishPanel)
-AFHeader.Size = UDim2.new(1,-20,0,40)
-AFHeader.Position = UDim2.new(0,10,0,10)
-AFHeader.Text = "🎣 ADVANCED AUTO FISHING"
-AFHeader.TextColor3 = Color3.new(1,1,1)
-AFHeader.Font = Enum.Font.GothamBold
-AFHeader.TextSize = 18
-AFHeader.BackgroundTransparency = 1
-AFHeader.TextXAlignment = Enum.TextXAlignment.Center
-
--- Status Card
-local StatusCard = Instance.new("Frame", Panels.AutoFishPanel)
-StatusCard.Size = UDim2.new(1,-20,0,120)
-StatusCard.Position = UDim2.new(0,10,0,60)
-StatusCard.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Instance.new("UICorner", StatusCard).CornerRadius = UDim.new(0,10)
-
-local StatusTitle = Instance.new("TextLabel", StatusCard)
-StatusTitle.Size = UDim2.new(1,-20,0,30)
-StatusTitle.Position = UDim2.new(0,10,0,5)
-StatusTitle.Text = "SYSTEM STATUS"
-StatusTitle.TextColor3 = Color3.fromRGB(200,200,200)
-StatusTitle.Font = Enum.Font.GothamBold
-StatusTitle.TextSize = 14
-StatusTitle.BackgroundTransparency = 1
-StatusTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local StatusText = Instance.new("TextLabel", StatusCard)
-StatusText.Size = UDim2.new(1,-20,0,30)
-StatusText.Position = UDim2.new(0,10,0,35)
-StatusText.Text = "🔴 INACTIVE"
-StatusText.TextColor3 = Color3.fromRGB(255,100,100)
-StatusText.Font = Enum.Font.GothamBold
-StatusText.TextSize = 16
-StatusText.BackgroundTransparency = 1
-StatusText.TextXAlignment = Enum.TextXAlignment.Left
-
-local RodText = Instance.new("TextLabel", StatusCard)
-RodText.Size = UDim2.new(1,-20,0,25)
-RodText.Position = UDim2.new(0,10,0,70)
-RodText.Text = "Rod: Not Found"
-RodText.TextColor3 = Color3.fromRGB(200,200,200)
-RodText.Font = Enum.Font.Gotham
-RodText.TextSize = 13
-RodText.BackgroundTransparency = 1
-RodText.TextXAlignment = Enum.TextXAlignment.Left
-
--- Stats Card
-local StatsCard = Instance.new("Frame", Panels.AutoFishPanel)
-StatsCard.Size = UDim2.new(1,-20,0,100)
-StatsCard.Position = UDim2.new(0,10,0,190)
-StatsCard.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Instance.new("UICorner", StatsCard).CornerRadius = UDim.new(0,10)
-
-local StatsTitle = Instance.new("TextLabel", StatsCard)
-StatsTitle.Size = UDim2.new(1,-20,0,30)
-StatsTitle.Position = UDim2.new(0,10,0,5)
-StatsTitle.Text = "FISHING STATS"
-StatsTitle.TextColor3 = Color3.fromRGB(200,200,200)
-StatsTitle.Font = Enum.Font.GothamBold
-StatsTitle.TextSize = 14
-StatsTitle.BackgroundTransparency = 1
-StatsTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local FishCountText = Instance.new("TextLabel", StatsCard)
-FishCountText.Size = UDim2.new(0.5,-10,0,25)
-FishCountText.Position = UDim2.new(0,10,0,40)
-FishCountText.Text = "Fish: 0"
-FishCountText.TextColor3 = Color3.new(1,1,1)
-FishCountText.Font = Enum.Font.GothamBold
-FishCountText.TextSize = 14
-FishCountText.BackgroundTransparency = 1
-FishCountText.TextXAlignment = Enum.TextXAlignment.Left
-
-local AttemptsText = Instance.new("TextLabel", StatsCard)
-AttemptsText.Size = UDim2.new(0.5,-10,0,25)
-AttemptsText.Position = UDim2.new(0.5,0,0,40)
-AttemptsText.Text = "Attempts: 0"
-AttemptsText.TextColor3 = Color3.fromRGB(200,200,200)
-AttemptsText.Font = Enum.Font.Gotham
-AttemptsText.TextSize = 13
-AttemptsText.BackgroundTransparency = 1
-AttemptsText.TextXAlignment = Enum.TextXAlignment.Left
-
-local RateText = Instance.new("TextLabel", StatsCard)
-RateText.Size = UDim2.new(1,-20,0,25)
-RateText.Position = UDim2.new(0,10,0,65)
-RateText.Text = "Success Rate: 70%"
-RateText.TextColor3 = Color3.fromRGB(200,200,200)
-RateText.Font = Enum.Font.Gotham
-RateText.TextSize = 13
-RateText.BackgroundTransparency = 1
-RateText.TextXAlignment = Enum.TextXAlignment.Left
-
--- Control Card
-local ControlCard = Instance.new("Frame", Panels.AutoFishPanel)
-ControlCard.Size = UDim2.new(1,-20,0,80)
-ControlCard.Position = UDim2.new(0,10,0,300)
-ControlCard.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Instance.new("UICorner", ControlCard).CornerRadius = UDim.new(0,10)
-
-local ControlTitle = Instance.new("TextLabel", ControlCard)
-ControlTitle.Size = UDim2.new(1,-20,0,30)
-ControlTitle.Position = UDim2.new(0,10,0,5)
-ControlTitle.Text = "CONTROLS"
-ControlTitle.TextColor3 = Color3.fromRGB(200,200,200)
-ControlTitle.Font = Enum.Font.GothamBold
-ControlTitle.TextSize = 14
-ControlTitle.BackgroundTransparency = 1
-ControlTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local StartBtn = Instance.new("TextButton", ControlCard)
-StartBtn.Size = UDim2.new(0.5,-15,0,35)
-StartBtn.Position = UDim2.new(0,10,0,40)
-StartBtn.Text = "▶ START"
-StartBtn.Font = Enum.Font.GothamBold
-StartBtn.TextSize = 14
-StartBtn.TextColor3 = Color3.new(1,1,1)
-StartBtn.BackgroundColor3 = Color3.fromRGB(0,180,0)
-Instance.new("UICorner", StartBtn).CornerRadius = UDim.new(0,8)
-
-local DetectBtn = Instance.new("TextButton", ControlCard)
-DetectBtn.Size = UDim2.new(0.5,-15,0,35)
-DetectBtn.Position = UDim2.new(0.5,5,0,40)
-DetectBtn.Text = "🔍 SCAN ROD"
-DetectBtn.Font = Enum.Font.GothamBold
-DetectBtn.TextSize = 12
-DetectBtn.TextColor3 = Color3.new(1,1,1)
-DetectBtn.BackgroundColor3 = Color3.fromRGB(0,120,200)
-Instance.new("UICorner", DetectBtn).CornerRadius = UDim.new(0,8)
-
--- Settings Card
-local SettingsCard = Instance.new("Frame", Panels.AutoFishPanel)
-SettingsCard.Size = UDim2.new(1,-20,0,100)
-SettingsCard.Position = UDim2.new(0,10,0,390)
-SettingsCard.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Instance.new("UICorner", SettingsCard).CornerRadius = UDim.new(0,10)
-
-local SettingsTitle = Instance.new("TextLabel", SettingsCard)
-SettingsTitle.Size = UDim2.new(1,-20,0,30)
-SettingsTitle.Position = UDim2.new(0,10,0,5)
-SettingsTitle.Text = "SETTINGS"
-SettingsTitle.TextColor3 = Color3.fromRGB(200,200,200)
-SettingsTitle.Font = Enum.Font.GothamBold
-SettingsTitle.TextSize = 14
-SettingsTitle.BackgroundTransparency = 1
-SettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local CooldownLabel = Instance.new("TextLabel", SettingsCard)
-CooldownLabel.Size = UDim2.new(0.6,-10,0,25)
-CooldownLabel.Position = UDim2.new(0,10,0,40)
-CooldownLabel.Text = "Cooldown: " .. AutoFish.Cooldown .. "s"
-CooldownLabel.TextColor3 = Color3.fromRGB(200,200,200)
-CooldownLabel.Font = Enum.Font.Gotham
-CooldownLabel.TextSize = 13
-CooldownLabel.BackgroundTransparency = 1
-CooldownLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local CooldownBox = Instance.new("TextBox", SettingsCard)
-CooldownBox.Size = UDim2.new(0.4,-20,0,25)
-CooldownBox.Position = UDim2.new(0.6,0,0,40)
-CooldownBox.Text = tostring(AutoFish.Cooldown)
-CooldownBox.Font = Enum.Font.Gotham
-CooldownBox.TextSize = 13
-CooldownBox.TextColor3 = Color3.new(1,1,1)
-CooldownBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Instance.new("UICorner", CooldownBox).CornerRadius = UDim.new(0,6)
-
-local RateLabel = Instance.new("TextLabel", SettingsCard)
-RateLabel.Size = UDim2.new(0.6,-10,0,25)
-RateLabel.Position = UDim2.new(0,10,0,70)
-RateLabel.Text = "Success Rate: " .. (AutoFish.SuccessRate * 100) .. "%"
-RateLabel.TextColor3 = Color3.fromRGB(200,200,200)
-RateLabel.Font = Enum.Font.Gotham
-RateLabel.TextSize = 13
-RateLabel.BackgroundTransparency = 1
-RateLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local RateBox = Instance.new("TextBox", SettingsCard)
-RateBox.Size = UDim2.new(0.4,-20,0,25)
-RateBox.Position = UDim2.new(0.6,0,0,70)
-RateBox.Text = tostring(AutoFish.SuccessRate * 100)
-RateBox.Font = Enum.Font.Gotham
-RateBox.TextSize = 13
-RateBox.TextColor3 = Color3.new(1,1,1)
-RateBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Instance.new("UICorner", RateBox).CornerRadius = UDim.new(0,6)
-
--- Update stats function
-AutoFishUI.updateStats = function()
-    local statusColor = AutoFish.Enabled and Color3.fromRGB(100,255,100) or Color3.fromRGB(255,100,100)
-    local statusText = AutoFish.Enabled and "🟢 ACTIVE" or "🔴 INACTIVE"
+local function createEnhancedAutoFishUI()
+    -- ... (your existing UI creation code)
     
-    StatusText.Text = statusText
-    StatusText.TextColor3 = statusColor
+    -- Add Rod Info Card
+    local RodInfoCard = Instance.new("Frame", Panels.AutoFishPanel)
+    RodInfoCard.Size = UDim2.new(1,-20,0,100)
+    RodInfoCard.Position = UDim2.new(0,10,0,130)
+    RodInfoCard.BackgroundColor3 = Color3.fromRGB(30,30,40)
+    Instance.new("UICorner", RodInfoCard).CornerRadius = UDim.new(0,10)
+
+    local RodTitle = Instance.new("TextLabel", RodInfoCard)
+    RodTitle.Size = UDim2.new(1,-20,0,30)
+    RodTitle.Position = UDim2.new(0,10,0,5)
+    RodTitle.Text = "CURRENT ROD"
+    RodTitle.TextColor3 = Color3.fromRGB(200,200,255)
+    RodTitle.Font = Enum.Font.GothamBold
+    RodTitle.TextSize = 14
+    RodTitle.BackgroundTransparency = 1
+    RodTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local RodNameText = Instance.new("TextLabel", RodInfoCard)
+    RodNameText.Name = "RodNameText"
+    RodNameText.Size = UDim2.new(1,-20,0,25)
+    RodNameText.Position = UDim2.new(0,10,0,35)
+    RodNameText.Text = "None"
+    RodNameText.TextColor3 = Color3.new(1,1,1)
+    RodNameText.Font = Enum.Font.GothamBold
+    RodNameText.TextSize = 16
+    RodNameText.BackgroundTransparency = 1
+    RodNameText.TextXAlignment = Enum.TextXAlignment.Left
+
+    local RodStatsText = Instance.new("TextLabel", RodInfoCard)
+    RodStatsText.Name = "RodStatsText"
+    RodStatsText.Size = UDim2.new(1,-20,0,40)
+    RodStatsText.Position = UDim2.new(0,10,0,60)
+    RodStatsText.Text = "Speed: 0%\nWeight: 0kg"
+    RodStatsText.TextColor3 = Color3.fromRGB(180,180,200)
+    RodStatsText.Font = Enum.Font.Gotham
+    RodStatsText.TextSize = 12
+    RodStatsText.BackgroundTransparency = 1
+    RodStatsText.TextXAlignment = Enum.TextXAlignment.Left
+    RodStatsText.TextYAlignment = Enum.TextYAlignment.Top
     
-    local rodName = AutoFish.CurrentRod and AutoFish.CurrentRod.Name or "Not Found"
-    RodText.Text = "Rod: " .. rodName
-    
-    FishCountText.Text = "Fish: " .. AutoFish.FishCaught
-    AttemptsText.Text = "Attempts: " .. AutoFish.TotalAttempts
-    
-    local rate = AutoFish.TotalAttempts > 0 and 
-                 math.floor((AutoFish.FishCaught / AutoFish.TotalAttempts) * 100) or 0
-    RateText.Text = "Success Rate: " .. rate .. "%"
-    
-    -- Update button
-    StartBtn.Text = AutoFish.Enabled and "⏹ STOP" or "▶ START"
-    StartBtn.BackgroundColor3 = AutoFish.Enabled and Color3.fromRGB(200,0,0) or Color3.fromRGB(0,180,0)
-end
-
---==================================
--- TELEPORT UI
---==================================
-local Search = Instance.new("TextBox", Panels.TeleportPanel)
-Search.Size = UDim2.new(1,-20,0,34)
-Search.Position = UDim2.new(0,10,0,10)
-Search.PlaceholderText = "Search location..."
-Search.Text = ""
-Search.ClearTextOnFocus = false
-Search.Font = Enum.Font.Gotham
-Search.TextSize = 14
-Search.TextColor3 = Color3.new(1,1,1)
-Search.BackgroundColor3 = Color3.fromRGB(20,20,20)
-Instance.new("UICorner", Search).CornerRadius = UDim.new(0,8)
-
-local Scroll = Instance.new("ScrollingFrame", Panels.TeleportPanel)
-Scroll.Position = UDim2.new(0,10,0,54)
-Scroll.Size = UDim2.new(1,-20,1,-64)
-Scroll.CanvasSize = UDim2.new(0,0,0,0)
-Scroll.ScrollBarImageTransparency = 0.2
-Scroll.BackgroundTransparency = 1
-Scroll.AutomaticCanvasSize = Enum.AutomaticSize.None
-
-local function rebuildList(filter)
-    Scroll:ClearAllChildren()
-
-    local layout = Instance.new("UIListLayout", Scroll)
-    layout.Padding = UDim.new(0,6)
-
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Scroll.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 10)
-    end)
-
-    for _,tp in ipairs(Teleports) do
-        if (not filter) or string.find(tp.name:lower(), filter:lower(), 1, true) then
-            local b = Instance.new("TextButton", Scroll)
-            b.Size = UDim2.new(1,0,0,42)
-            b.Text = tp.name.."  ["..tp.cat.."]"
-            b.Font = Enum.Font.GothamBold
-            b.TextSize = 13
-            b.TextColor3 = Color3.new(1,1,1)
-            b.BackgroundColor3 = Color3.fromRGB(120,0,0)
-            Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
-
-            b.MouseButton1Click:Connect(function()
-                fastSmoothTeleport(tp.cf)
-            end)
+    -- Update the updateStats function:
+    AutoFishUI.updateStats = function()
+        -- ... (your existing update code)
+        
+        -- Update rod info
+        if AutoFish.CurrentRodData then
+            local tierColor = {
+                [1] = Color3.fromRGB(139, 69, 19),    -- Brown
+                [2] = Color3.fromRGB(192, 192, 192),  -- Silver
+                [3] = Color3.fromRGB(255, 215, 0),    -- Gold
+                [4] = Color3.fromRGB(128, 0, 128),    -- Purple
+                [5] = Color3.fromRGB(0, 255, 255)     -- Cyan
+            }
+            
+            RodNameText.Text = AutoFish.CurrentRodData.DisplayName
+            RodNameText.TextColor3 = tierColor[AutoFish.CurrentRodData.Tier] or Color3.new(1,1,1)
+            
+            RodStatsText.Text = string.format("Type: %s\nSpeed: %d%%\nWeight: %s kg",
+                AutoFish.CurrentRodData.Type,
+                AutoFish.CurrentRodData.Speed,
+                formatNumber(AutoFish.CurrentRodData.Weight))
+        else
+            RodNameText.Text = "No Rod"
+            RodNameText.TextColor3 = Color3.fromRGB(150,150,150)
+            RodStatsText.Text = "Scan for rods first"
         end
+        
+        -- Update earnings
+        EarningsText.Text = string.format("Earnings: $%s\nRare: %d | Common: %d",
+            formatNumber(AutoFish.TotalEarnings),
+            AutoFish.RareFishCount,
+            AutoFish.CommonFishCount)
     end
 end
 
-Search:GetPropertyChangedSignal("Text"):Connect(function()
-    rebuildList(Search.Text ~= "" and Search.Text or nil)
-end)
-
---==================================
--- PANEL MANAGEMENT
---==================================
-local function showPanel(panelName)
-    for name, panel in pairs(Panels) do
-        panel.Visible = false
-    end
-    
-    for name, btn in pairs(MenuButtons) do
-        btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    end
-    
-    if Panels[panelName] then
-        Panels[panelName].Visible = true
-        local btnName = panelName:gsub("Panel", "Btn")
-        if MenuButtons[btnName] then
-            MenuButtons[btnName].BackgroundColor3 = Color3.fromRGB(120,0,0)
-        end
-    end
-    
-    AutoFishUI.updateStats()
-end
-
-MenuButtons.TeleportBtn.MouseButton1Click:Connect(function()
-    showPanel("TeleportPanel")
-end)
-
-MenuButtons.AutoFishBtn.MouseButton1Click:Connect(function()
-    showPanel("AutoFishPanel")
-end)
-
---==================================
--- AUTO FISH CONTROLS
---==================================
-StartBtn.MouseButton1Click:Connect(function()
-    AutoFish.Enabled = not AutoFish.Enabled
-    
-    if AutoFish.Enabled then
-        startAdvancedAutoFishing()
+-- Helper function to format large numbers
+local function formatNumber(num)
+    if num >= 1000000 then
+        return string.format("%.1fM", num/1000000)
+    elseif num >= 1000 then
+        return string.format("%.1fK", num/1000)
     else
-        stopAdvancedAutoFishing()
+        return tostring(num)
     end
-    
-    AutoFishUI.updateStats()
-end)
-
-DetectBtn.MouseButton1Click:Connect(function()
-    local rod = findFishingRod()
-    if rod then
-        equipRod(rod)
-        AutoFishUI.updateStats()
-    end
-end)
-
-CooldownBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        local num = tonumber(CooldownBox.Text)
-        if num and num >= 1 and num <= 10 then
-            AutoFish.Cooldown = num
-            CooldownLabel.Text = "Cooldown: " .. num .. "s"
-        else
-            CooldownBox.Text = tostring(AutoFish.Cooldown)
-        end
-    end
-end)
-
-RateBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        local num = tonumber(RateBox.Text)
-        if num and num >= 1 and num <= 100 then
-            AutoFish.SuccessRate = num / 100
-            RateLabel.Text = "Success Rate: " .. num .. "%"
-        else
-            RateBox.Text = tostring(AutoFish.SuccessRate * 100)
-        end
-    end
-end)
-
---==================================
--- MINIMIZE SYSTEM
---==================================
-local Bubble = Instance.new("TextButton", gui)
-Bubble.Size = UDim2.new(0,50,0,50)
-Bubble.Position = UDim2.new(0,20,0.5,-25)
-Bubble.Text = "🎣"
-Bubble.Visible = false
-Bubble.BackgroundColor3 = Color3.fromRGB(120,0,0)
-Bubble.TextColor3 = Color3.new(1,1,1)
-Bubble.Font = Enum.Font.GothamBold
-Bubble.TextSize = 18
-Bubble.Active = true
-Bubble.Draggable = true
-Instance.new("UICorner", Bubble).CornerRadius = UDim.new(1,0)
-
-local MinBtn = Instance.new("TextButton", Title)
-MinBtn.Size = UDim2.new(0,30,0,30)
-MinBtn.Position = UDim2.new(1,-40,0,3)
-MinBtn.Text = "-"
-MinBtn.BackgroundTransparency = 1
-MinBtn.TextColor3 = Color3.new(1,1,1)
-
-MinBtn.MouseButton1Click:Connect(function()
-    Main.Visible = false
-    Bubble.Visible = true
-end)
-
-Bubble.MouseButton1Click:Connect(function()
-    Bubble.Visible = false
-    Main.Visible = true
-end)
-
---==================================
--- HOTKEY
---==================================
-UIS.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.RightShift then
-        Main.Visible = not Main.Visible
-        Bubble.Visible = false
-    end
-end)
+end
 
 --==================================
 -- INITIALIZATION
 --==================================
-rebuildList()
-showPanel("TeleportPanel")
-AutoFishUI.updateStats()
-
--- Initial rod detection
-task.wait(1)
-local rod = findFishingRod()
-if rod then
-    equipRod(rod)
-    AutoFishUI.updateStats()
+-- Add this to your initialization:
+task.wait(2) -- Wait for game to load
+print("🎣 Loading Fish It Rod Database...")
+print("Supported rods:")
+for _, rod in ipairs(RodDatabase) do
+    print(string.format("  %s (%s) - Speed: %d%%, Weight: %dkg",
+        rod.DisplayName, rod.Type, rod.Speed, rod.Weight))
 end
 
-print("🎣 Advanced Auto Fishing System Loaded!")
-print("System will auto-detect fishing rods")
-print("RightShift to toggle UI")
+-- Initial scan
+local rods = scanForRods()
+if #rods > 0 then
+    print("✅ Found", #rods, "rods")
+    equipBestRod()
+else
+    print("⚠️ No rods found. Make sure you have a fishing rod!")
+end
