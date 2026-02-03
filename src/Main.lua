@@ -48,7 +48,7 @@ end
 --==================================
 local Locations = {
     Islands = {
-        {Name = "Fisherman Island", Icon = "🏝️", CF = CFrame.new(100,50,100)},
+        {Name = "Fisherman Island", Icon = "🏝️", CF = CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875)},
         {Name = "Kohana", Icon = "🎎", CF = CFrame.new(200,50,-150)},
         {Name = "Tropical Grove", Icon = "🌴", CF = CFrame.new(-300,50,200)},
         {Name = "Ancient Jungle", Icon = "🌿", CF = CFrame.new(400,50,-300)},
@@ -61,10 +61,10 @@ local Locations = {
         {Name = "Volcano Cavern", Icon = "🔥", CF = CFrame.new(0,-200,0)},
     },
     Secret = {
-        {Name = "Ancient Ruin", Icon = "🏛️", CF = CFrame.new(500,50,0)},
+        {Name = "Ancient Ruin", Icon = "🏛️", CF = CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875)},
         {Name = "Sacred Temple", Icon = "🛕", CF = CFrame.new(600,50,0)},
         {Name = "Treasure Room", Icon = "💎", CF = CFrame.new(700,50,0)},
-        {Name = "Pirate Cove", Icon = "🏴‍☠️", CF = CFrame.new(800,50,0)},
+        {Name = "Pirate Cove", Icon = "🏴‍☠️", CF = CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625)},
         {Name = "Sisyphus Statue", Icon = "🗿", CF = CFrame.new(900,50,0)},
     }
 }
