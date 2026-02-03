@@ -30,24 +30,24 @@ local TELEPORT_TIME = 0.04 -- makin kecil makin instan (0.03–0.06 recommended)
 local Teleports = {
     -- ISLAND
     {name="Fisherman Island", cat="Island", cf=CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875)},
-    {name="Kohana", cat="Island", cf=CFrame.new(0,0,0)},
-    {name="Tropical Grove", cat="Island", cf=CFrame.new(0,0,0)},
-    {name="Ancient Jungle", cat="Island", cf=CFrame.new(0,0,0)},
-    {name="Creater Island", cat="Island", cf=CFrame.new(0,0,0)},
+    {name="Kohana", cat="Island", cf=CFrame.new(-624.4239501953125, 7.744749546051025, 676.2808227539062)},
+    {name="Tropical Grove", cat="Island", cf=CFrame.new(-2033.400146484375, 6.2680158615112305, 3715.0341796875)},
+    {name="Ancient Jungle", cat="Island", cf=CFrame.new(1463.75439453125, 7.6254987716674805, -321.6741943359375)},
+    {name="Creater Island", cat="Island", cf=CFrame.new(1012.2926635742188, 3.6445138454437256, 5153.46435546875)},
 
     -- DEPTH
-    {name="Coral Reefs", cat="Depth", cf=CFrame.new(0,0,0)},
-    {name="Esoteric Depths", cat="Depth", cf=CFrame.new(0,0,0)},
-    {name="Crystal Depths", cat="Depth", cf=CFrame.new(0,0,0)},
+    {name="Coral Reefs", cat="Depth", cf=CFrame.new(-2920.48095703125, 3.2499992847442627, 2072.742919921875)},
+    {name="Esoteric Depths", cat="Depth", cf=CFrame.new(3208.166259765625, -1302.8551025390625, 1446.6112060546875)},
+    {name="Crystal Depths", cat="Depth", cf=CFrame.new(5637, -904.9847412109375, 15354)},
     {name="Kohana Volcano", cat="Depth", cf=CFrame.new(-424.22802734375, 7.2453107833862305, 123.47695922851562)},
 
     -- SECRET
     {name="Ancient Ruin", cat="Secret", cf=CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875)},
-    {name="Sacred Temple", cat="Secret", cf=CFrame.new(0,0,0)},
-    {name="Treasure Room", cat="Secret", cf=CFrame.new(0,0,0)},
+    {name="Sacred Temple", cat="Secret", cf=CFrame.new(1467.5760498046875, -22.1250057220459, -651.3453979492188)},
+    {name="Treasure Room", cat="Secret", cf=CFrame.new(-3631.212646484375, -279.07427978515625, -1599.5411376953125)},
     {name="Pirate Cove", cat="Secret", cf=CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625)},
-    {name="Pirate Treasure Room", cat="Secret", cf=CFrame.new(0,0,0)},
-    {name="Sisyphus Statue", cat="Secret", cf=CFrame.new(0,0,0)},
+    {name="Pirate Treasure Room", cat="Secret", cf=CFrame.new(3301.19775390625, -305.0702819824219, 3039.332763671875)},
+    {name="Sisyphus Statue", cat="Secret", cf=CFrame.new(-3785.260009765625, -135.07435607910156, -951.13818359375)},
 }
 
 --==================================
