@@ -1,6 +1,5 @@
 --==================================
--- AmsHub | Fish It - Enhanced UI (FIXED)
--- Sidebar Toggle + Notification System
+-- AmsHub | Fish It - Fixed Error Version
 --==================================
 
 -- SERVICES
@@ -125,8 +124,6 @@ local function showNotification(title, message, color)
             end)
         end
     end)
-    
-    return notification
 end
 
 --==================================
@@ -143,7 +140,6 @@ local function fastSmoothTeleport(cf, locationName)
     )
     tween:Play()
     
-    -- Show notification
     showNotification("📍 Teleported", "Successfully teleported to:\n" .. locationName, Color3.fromRGB(0, 200, 100))
 end
 
@@ -151,7 +147,7 @@ end
 -- UI CREATION
 --==================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "AmsHubEnhanced"
+gui.Name = "AmsHubFixed"
 gui.ResetOnSpawn = false
 gui.Parent = LP:WaitForChild("PlayerGui")
 
@@ -207,12 +203,12 @@ SidebarHeader.TextSize = 14
 SidebarHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 SidebarHeader.BorderSizePixel = 0
 
--- CATEGORY TOGGLE BUTTONS
-local Categories = {
-    {name = "Island", icon = "🏝️", color = Color3.fromRGB(0, 180, 100)},
-    {name = "Depth", icon = "🌊", color = Color3.fromRGB(0, 120, 255)},
-    {name = "Secret", icon = "🔒", color = Color3.fromRGB(200, 0, 200)},
-    {name = "All", icon = "📍", color = Color3.fromRGB(255, 150, 0)}
+-- CATEGORY DATA (Store colors separately)
+local CategoryData = {
+    Island = {icon = "🏝️", color = Color3.fromRGB(0, 180, 100)},
+    Depth = {icon = "🌊", color = Color3.fromRGB(0, 120, 255)},
+    Secret = {icon = "🔒", color = Color3.fromRGB(200, 0, 200)},
+    All = {icon = "📍", color = Color3.fromRGB(255, 150, 0)}
 }
 
 local CategoryButtons = {}
@@ -302,7 +298,7 @@ LocationLayout.Padding = UDim.new(0, 10)
 LocationLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 --==================================
--- HELPER FUNCTIONS (DEFINED BEFORE USE)
+-- HELPER FUNCTIONS
 --==================================
 local function countLocations(category)
     if category == "All" then
@@ -320,19 +316,10 @@ end
 
 local function updateHeader()
     local count = countLocations(SelectedCategory)
-    local icon = ""
-    local color = Color3.fromRGB(0, 150, 255)
+    local categoryData = CategoryData[SelectedCategory] or CategoryData["Island"]
     
-    for _, cat in ipairs(Categories) do
-        if cat.name == SelectedCategory then
-            icon = cat.icon
-            color = cat.color
-            break
-        end
-    end
-    
-    HeaderTitle.Text = icon .. " " .. SelectedCategory:upper() .. " LOCATIONS"
-    HeaderTitle.TextColor3 = color
+    HeaderTitle.Text = categoryData.icon .. " " .. SelectedCategory:upper() .. " LOCATIONS"
+    HeaderTitle.TextColor3 = categoryData.color
     HeaderSubtitle.Text = count .. " locations available • Click to teleport"
 end
 
@@ -445,11 +432,9 @@ local function createLocationCard(location, index)
             }):Play()
         end
     end)
-    
-    return card
 end
 
--- MAIN FUNCTION TO UPDATE LOCATION LIST (MUST BE DEFINED BEFORE BEING CALLED)
+-- MAIN FUNCTION TO UPDATE LOCATION LIST
 local function updateLocationList()
     -- Clear previous cards
     for _, child in ipairs(LocationContainer:GetChildren()) do
@@ -478,7 +463,7 @@ local function updateLocationList()
     end
     
     -- Update scroll size
-    local cardHeight = 80  -- 70 height + 10 padding
+    local cardHeight = 80
     local totalHeight = locationsAdded * cardHeight
     local maxHeight = LocationScroll.AbsoluteSize.Y
     
@@ -507,70 +492,74 @@ local function updateLocationList()
 end
 
 --==================================
--- CREATE CATEGORY BUTTONS (SETUP AFTER FUNCTIONS ARE DEFINED)
+-- CREATE CATEGORY BUTTONS (FIXED)
 --==================================
-for i, cat in ipairs(Categories) do
+local function createCategoryButton(categoryName, positionIndex)
+    local categoryInfo = CategoryData[categoryName]
+    if not categoryInfo then return end
+    
     local catBtn = Instance.new("TextButton", Sidebar)
     catBtn.Size = UDim2.new(1, -10, 0, 45)
-    catBtn.Position = UDim2.new(0, 5, 0, 60 + (i-1)*55)
-    catBtn.Text = cat.icon .. " " .. cat.name:upper()
+    catBtn.Position = UDim2.new(0, 5, 0, 60 + (positionIndex-1)*55)
+    catBtn.Text = categoryInfo.icon .. " " .. categoryName:upper()
     catBtn.Font = Enum.Font.GothamBold
     catBtn.TextSize = 13
-    catBtn.TextColor3 = Color3.new(1, 1, 1)
-    catBtn.BackgroundColor3 = cat.color
+    catBtn.BackgroundColor3 = categoryInfo.color
     catBtn.AutoButtonColor = false
     Instance.new("UICorner", catBtn).CornerRadius = UDim.new(0, 8)
     
     -- Highlight selected category
-    if cat.name == "Island" then
+    if categoryName == "Island" then
         catBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        catBtn.TextColor3 = cat.color
+        catBtn.TextColor3 = categoryInfo.color
+    else
+        catBtn.TextColor3 = Color3.new(1, 1, 1)
     end
     
-    -- Store original color
-    catBtn.OriginalColor = cat.color
-    CategoryButtons[cat.name] = catBtn
-end
-
---==================================
--- EVENT LISTENERS (SETUP AFTER FUNCTIONS ARE DEFINED)
---==================================
--- Category button click handlers
-for _, cat in ipairs(Categories) do
-    local catBtn = CategoryButtons[cat.name]
-    if catBtn then
-        catBtn.MouseButton1Click:Connect(function()
-            -- Reset all buttons
-            for btnName, btn in pairs(CategoryButtons) do
-                if btn and btn.Parent then
-                    btn.BackgroundColor3 = btn.OriginalColor
-                    btn.TextColor3 = Color3.new(1, 1, 1)
-                end
+    -- Store button reference with its original color
+    CategoryButtons[categoryName] = {
+        Button = catBtn,
+        OriginalColor = categoryInfo.color
+    }
+    
+    -- Click handler
+    catBtn.MouseButton1Click:Connect(function()
+        -- Reset all buttons to original colors
+        for name, data in pairs(CategoryButtons) do
+            if data.Button and data.Button.Parent then
+                data.Button.BackgroundColor3 = data.OriginalColor
+                data.Button.TextColor3 = Color3.new(1, 1, 1)
             end
-            
-            -- Highlight selected
-            if catBtn and catBtn.Parent then
-                catBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                catBtn.TextColor3 = cat.color
-            end
-            
-            -- Update selection
-            SelectedCategory = cat.name
-            updateLocationList()
-            
-            -- Show notification
-            showNotification("📂 Category Selected", 
-                "Now viewing: " .. cat.name .. " locations\n(" .. countLocations(cat.name) .. " available)",
-                cat.color)
-        end)
-    end
-end
-
--- Search box listener
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    if updateLocationList then
+        end
+        
+        -- Highlight selected button
+        if catBtn and catBtn.Parent then
+            catBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            catBtn.TextColor3 = categoryInfo.color
+        end
+        
+        -- Update selection
+        SelectedCategory = categoryName
         updateLocationList()
-    end
+        
+        -- Show notification
+        showNotification("📂 Category Selected", 
+            "Now viewing: " .. categoryName .. " locations\n(" .. countLocations(categoryName) .. " available)",
+            categoryInfo.color)
+    end)
+end
+
+-- Create buttons in order
+createCategoryButton("Island", 1)
+createCategoryButton("Depth", 2)
+createCategoryButton("Secret", 3)
+createCategoryButton("All", 4)
+
+--==================================
+-- EVENT LISTENERS
+--==================================
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    updateLocationList()
 end)
 
 --==================================
@@ -608,18 +597,16 @@ MinBtn.MouseButton1Click:Connect(function()
         Color3.fromRGB(255, 150, 0))
 end)
 
-if Bubble then
-    Bubble.MouseButton1Click:Connect(function()
-        if Bubble and Bubble.Parent then
-            Bubble.Visible = false
-        end
-        if Main and Main.Parent then
-            Main.Visible = true
-        end
-        showNotification("📱 Restored", "Teleport hub restored", 
-            Color3.fromRGB(0, 200, 100))
-    end)
-end
+Bubble.MouseButton1Click:Connect(function()
+    if Bubble and Bubble.Parent then
+        Bubble.Visible = false
+    end
+    if Main and Main.Parent then
+        Main.Visible = true
+    end
+    showNotification("📱 Restored", "Teleport hub restored", 
+        Color3.fromRGB(0, 200, 100))
+end)
 
 --==================================
 -- HOTKEY TOGGLE
@@ -633,7 +620,7 @@ UIS.InputBegan:Connect(function(input, gp)
         if Bubble and Bubble.Parent then
             Bubble.Visible = false
         end
-        if Main and Main.Visible then
+        if Main and Main.Parent and Main.Visible then
             showNotification("🎣 Hub Opened", "Teleport hub is now open", 
                 Color3.fromRGB(0, 150, 255))
         end
@@ -644,16 +631,14 @@ end)
 -- INITIALIZATION
 --==================================
 -- Initialize location list
-if updateLocationList then
-    updateLocationList()
-end
+updateLocationList()
 
 -- Initial notification
 task.wait(0.5)
 showNotification("🎣 Welcome!", "Fish It Teleport Hub loaded!\n" .. #Teleports .. " locations available", 
     Color3.fromRGB(0, 150, 255))
 
-print("✅ Enhanced Teleport Hub Loaded Successfully!")
-print("📍 Categories: Island, Depth, Secret, All")
-print("🔔 Notification system active")
-print("🎯 RightShift to toggle UI")
+print("✅ AmsHub Fixed Version Loaded Successfully!")
+print("📍 " .. #Teleports .. " teleport locations available")
+print("🔔 Notification system working")
+print("🎯 Press RightShift to toggle UI")
