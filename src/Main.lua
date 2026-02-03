@@ -1,14 +1,11 @@
 --==================================
--- AmsHub | Fish It - With Settings & System Monitor
+-- AmsHub | Fish It - Clean Version
 --==================================
 
 -- SERVICES
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Stats = game:GetService("Stats")
-local Workspace = game:GetService("Workspace")
 
 local LP = Players.LocalPlayer
 
@@ -50,30 +47,6 @@ local Teleports = {
     {name="Pirate Cove", cat="Secret", cf=CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625)},
     {name="Pirate Treasure Room", cat="Secret", cf=CFrame.new(3301.19775390625, -305.0702819824219, 3039.332763671875)},
     {name="Sisyphus Statue", cat="Secret", cf=CFrame.new(-3785.260009765625, -135.07435607910156, -951.13818359375)},
-}
-
---==================================
--- SYSTEM SETTINGS
---==================================
-local Settings = {
-    AutoSpeed = false,
-    SpeedMultiplier = 1.5,
-    ShowFPS = true,
-    ShowPing = true,
-    ShowMemory = true,
-    ShowBackpack = false,
-    NotificationSound = true
-}
-
---==================================
--- SYSTEM VARIABLES
---==================================
-local BackpackItems = {}
-local SystemStats = {
-    FPS = 0,
-    Ping = 0,
-    Memory = 0,
-    CPU = 0
 }
 
 --==================================
@@ -147,8 +120,7 @@ local function showNotification(title, message, color)
                 if notification then
                     notification:Destroy()
                 end
-            end
-            )
+            end)
         end
     end)
 end
@@ -174,14 +146,14 @@ end
 -- COMPACT UI CREATION
 --==================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "AmsHubWithSettings"
+gui.Name = "AmsHubClean"
 gui.ResetOnSpawn = false
 gui.Parent = LP:WaitForChild("PlayerGui")
 
--- MAIN FRAME
+-- MAIN FRAME (COMPACT SIZE)
 local Main = Instance.new("Frame", gui)
-Main.Size = UDim2.new(0, 450, 0, 350)  -- Slightly larger for settings
-Main.Position = UDim2.new(0.5, -225, 0.5, -175)
+Main.Size = UDim2.new(0, 400, 0, 320)
+Main.Position = UDim2.new(0.5, -200, 0.5, -160)
 Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 Main.Active = true
 Main.Draggable = true
@@ -192,7 +164,7 @@ local mainStroke = Instance.new("UIStroke", Main)
 mainStroke.Color = Color3.fromRGB(0, 120, 255)
 mainStroke.Thickness = 1.5
 
--- TITLE BAR
+-- TITLE BAR (COMPACT)
 local TitleBar = Instance.new("Frame", Main)
 TitleBar.Size = UDim2.new(1, 0, 0, 32)
 TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
@@ -204,63 +176,18 @@ titleCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", TitleBar)
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
-Title.Text = "🎣 FISH HUB v2.0"
+Title.Text = "🎣 FISH HUB"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 14
 Title.BackgroundTransparency = 1
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- SYSTEM MONITOR BAR (TOP RIGHT)
-local SystemBar = Instance.new("Frame", TitleBar)
-SystemBar.Size = UDim2.new(0, 150, 1, 0)
-SystemBar.Position = UDim2.new(1, -160, 0, 0)
-SystemBar.BackgroundTransparency = 1
-
-local FPSLabel = Instance.new("TextLabel", SystemBar)
-FPSLabel.Size = UDim2.new(0.25, 0, 1, 0)
-FPSLabel.Text = "FPS: 60"
-FPSLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-FPSLabel.Font = Enum.Font.GothamBold
-FPSLabel.TextSize = 11
-FPSLabel.BackgroundTransparency = 1
-FPSLabel.TextXAlignment = Enum.TextXAlignment.Center
-
-local PingLabel = Instance.new("TextLabel", SystemBar)
-PingLabel.Size = UDim2.new(0.25, 0, 1, 0)
-PingLabel.Position = UDim2.new(0.25, 0, 0, 0)
-PingLabel.Text = "PING: 50"
-PingLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-PingLabel.Font = Enum.Font.GothamBold
-PingLabel.TextSize = 11
-PingLabel.BackgroundTransparency = 1
-PingLabel.TextXAlignment = Enum.TextXAlignment.Center
-
-local MemLabel = Instance.new("TextLabel", SystemBar)
-MemLabel.Size = UDim2.new(0.25, 0, 1, 0)
-MemLabel.Position = UDim2.new(0.5, 0, 0, 0)
-MemLabel.Text = "RAM: 0MB"
-MemLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-MemLabel.Font = Enum.Font.GothamBold
-MemLabel.TextSize = 11
-MemLabel.BackgroundTransparency = 1
-MemLabel.TextXAlignment = Enum.TextXAlignment.Center
-
-local CPULabel = Instance.new("TextLabel", SystemBar)
-CPULabel.Size = UDim2.new(0.25, 0, 1, 0)
-CPULabel.Position = UDim2.new(0.75, 0, 0, 0)
-CPULabel.Text = "CPU: 0%"
-CPULabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-CPULabel.Font = Enum.Font.GothamBold
-CPULabel.TextSize = 11
-CPULabel.BackgroundTransparency = 1
-CPULabel.TextXAlignment = Enum.TextXAlignment.Center
-
 --==================================
--- SIDEBAR WITH SETTINGS
+-- CLEAN SIDEBAR (TELEPORT ONLY)
 --==================================
 local Sidebar = Instance.new("Frame", Main)
-Sidebar.Size = UDim2.new(0, 100, 1, -32)  -- Slightly wider
+Sidebar.Size = UDim2.new(0, 90, 1, -32)
 Sidebar.Position = UDim2.new(0, 0, 0, 32)
 Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Sidebar.ClipsDescendants = true
@@ -271,7 +198,7 @@ TeleportParentBtn.Size = UDim2.new(1, -10, 0, 36)
 TeleportParentBtn.Position = UDim2.new(0, 5, 0, 10)
 TeleportParentBtn.Text = "📍 TELEPORT"
 TeleportParentBtn.Font = Enum.Font.GothamBold
-TeleportParentBtn.TextSize = 11
+TeleportParentBtn.TextSize = 12
 TeleportParentBtn.TextColor3 = Color3.new(1, 1, 1)
 TeleportParentBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 TeleportParentBtn.AutoButtonColor = false
@@ -279,16 +206,28 @@ Instance.new("UICorner", TeleportParentBtn).CornerRadius = UDim.new(0, 6)
 
 -- DROPDOWN ARROW
 local DropdownArrow = Instance.new("TextLabel", TeleportParentBtn)
-DropdownArrow.Size = UDim2.new(0, 16, 1, 0)
-DropdownArrow.Position = UDim2.new(1, -18, 0, 0)
+DropdownArrow.Size = UDim2.new(0, 20, 1, 0)
+DropdownArrow.Position = UDim2.new(1, -22, 0, 0)
 DropdownArrow.Text = "▼"
 DropdownArrow.TextColor3 = Color3.new(1, 1, 1)
 DropdownArrow.Font = Enum.Font.GothamBold
-DropdownArrow.TextSize = 9
+DropdownArrow.TextSize = 10
 DropdownArrow.BackgroundTransparency = 1
 DropdownArrow.TextXAlignment = Enum.TextXAlignment.Center
 
--- CATEGORY CONTAINER
+-- SETTINGS BUTTON (SIMPLE)
+local SettingsBtn = Instance.new("TextButton", Sidebar)
+SettingsBtn.Size = UDim2.new(1, -10, 0, 36)
+SettingsBtn.Position = UDim2.new(0, 5, 0, 210)
+SettingsBtn.Text = "⚙️ SETTINGS"
+SettingsBtn.Font = Enum.Font.GothamBold
+SettingsBtn.TextSize = 12
+SettingsBtn.TextColor3 = Color3.new(1, 1, 1)
+SettingsBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+SettingsBtn.AutoButtonColor = false
+Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 6)
+
+-- CATEGORY SUB-BUTTONS (HIDDEN INITIALLY)
 local CategoryContainer = Instance.new("Frame", Sidebar)
 CategoryContainer.Size = UDim2.new(1, -10, 0, 0)
 CategoryContainer.Position = UDim2.new(0, 5, 0, 56)
@@ -299,44 +238,19 @@ local CategoryLayout = Instance.new("UIListLayout", CategoryContainer)
 CategoryLayout.Padding = UDim.new(0, 4)
 CategoryLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- SETTINGS BUTTON
-local SettingsBtn = Instance.new("TextButton", Sidebar)
-SettingsBtn.Size = UDim2.new(1, -10, 0, 36)
-SettingsBtn.Position = UDim2.new(0, 5, 0, 210)
-SettingsBtn.Text = "⚙️ SETTINGS"
-SettingsBtn.Font = Enum.Font.GothamBold
-SettingsBtn.TextSize = 11
-SettingsBtn.TextColor3 = Color3.new(1, 1, 1)
-SettingsBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-SettingsBtn.AutoButtonColor = false
-Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 6)
-
--- BACKPACK BUTTON
-local BackpackBtn = Instance.new("TextButton", Sidebar)
-BackpackBtn.Size = UDim2.new(1, -10, 0, 36)
-BackpackBtn.Position = UDim2.new(0, 5, 0, 256)
-BackpackBtn.Text = "🎒 BACKPACK"
-BackpackBtn.Font = Enum.Font.GothamBold
-BackpackBtn.TextSize = 11
-BackpackBtn.TextColor3 = Color3.new(1, 1, 1)
-BackpackBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-BackpackBtn.AutoButtonColor = false
-Instance.new("UICorner", BackpackBtn).CornerRadius = UDim.new(0, 6)
-
 --==================================
--- CONTENT AREA
+-- CONTENT AREA (COMPACT)
 --==================================
 local Content = Instance.new("Frame", Main)
-Content.Size = UDim2.new(1, -100, 1, -32)
-Content.Position = UDim2.new(0, 100, 0, 32)
+Content.Size = UDim2.new(1, -90, 1, -32)
+Content.Position = UDim2.new(0, 90, 0, 32)
 Content.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 Content.ClipsDescendants = true
 
--- PANELS
+-- PANELS (TELEPORT & SETTINGS)
 local Panels = {
     Teleport = Instance.new("Frame", Content),
-    Settings = Instance.new("Frame", Content),
-    Backpack = Instance.new("Frame", Content)
+    Settings = Instance.new("Frame", Content)
 }
 
 for name, panel in pairs(Panels) do
@@ -424,7 +338,7 @@ TPLayout.Padding = UDim.new(0, 6)
 TPLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 --==================================
--- SETTINGS PANEL
+-- SETTINGS PANEL (EMPTY - READY TO FILL)
 --==================================
 local SettingsPanel = Panels.Settings
 
@@ -438,14 +352,24 @@ Instance.new("UICorner", SetHeader).CornerRadius = UDim.new(0, 8)
 local SetHeaderTitle = Instance.new("TextLabel", SetHeader)
 SetHeaderTitle.Size = UDim2.new(1, -15, 0, 25)
 SetHeaderTitle.Position = UDim2.new(0, 10, 0, 5)
-SetHeaderTitle.Text = "⚙️ SYSTEM SETTINGS"
+SetHeaderTitle.Text = "⚙️ SETTINGS PANEL"
 SetHeaderTitle.TextColor3 = Color3.fromRGB(255, 140, 0)
 SetHeaderTitle.Font = Enum.Font.GothamBold
 SetHeaderTitle.TextSize = 14
 SetHeaderTitle.BackgroundTransparency = 1
 SetHeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- SETTINGS CONTAINER
+local SetHeaderSubtitle = Instance.new("TextLabel", SetHeader)
+SetHeaderSubtitle.Size = UDim2.new(1, -15, 0, 15)
+SetHeaderSubtitle.Position = UDim2.new(0, 10, 0, 27)
+SetHeaderSubtitle.Text = "Add your custom settings here"
+SetHeaderSubtitle.TextColor3 = Color3.fromRGB(150, 150, 170)
+SetHeaderSubtitle.Font = Enum.Font.Gotham
+SetHeaderSubtitle.TextSize = 10
+SetHeaderSubtitle.BackgroundTransparency = 1
+SetHeaderSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- SETTINGS CONTAINER (EMPTY SCROLL FRAME)
 local SetScroll = Instance.new("ScrollingFrame", SettingsPanel)
 SetScroll.Size = UDim2.new(1, -15, 1, -60)
 SetScroll.Position = UDim2.new(0, 7.5, 0, 55)
@@ -463,55 +387,16 @@ local SetLayout = Instance.new("UIListLayout", SetContainer)
 SetLayout.Padding = UDim.new(0, 8)
 SetLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
---==================================
--- BACKPACK PANEL
---==================================
-local BackpackPanel = Panels.Backpack
-
--- BACKPACK HEADER
-local BPHeader = Instance.new("Frame", BackpackPanel)
-BPHeader.Size = UDim2.new(1, 0, 0, 45)
-BPHeader.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-BPHeader.BorderSizePixel = 0
-Instance.new("UICorner", BPHeader).CornerRadius = UDim.new(0, 8)
-
-local BPHeaderTitle = Instance.new("TextLabel", BPHeader)
-BPHeaderTitle.Size = UDim2.new(1, -15, 0, 25)
-BPHeaderTitle.Position = UDim2.new(0, 10, 0, 5)
-BPHeaderTitle.Text = "🎒 BACKPACK ITEMS"
-BPHeaderTitle.TextColor3 = Color3.fromRGB(0, 200, 100)
-BPHeaderTitle.Font = Enum.Font.GothamBold
-BPHeaderTitle.TextSize = 14
-BPHeaderTitle.BackgroundTransparency = 1
-BPHeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local BPHeaderSubtitle = Instance.new("TextLabel", BPHeader)
-BPHeaderSubtitle.Size = UDim2.new(1, -15, 0, 15)
-BPHeaderSubtitle.Position = UDim2.new(0, 10, 0, 27)
-BPHeaderSubtitle.Text = "0 items"
-BPHeaderSubtitle.TextColor3 = Color3.fromRGB(150, 150, 170)
-BPHeaderSubtitle.Font = Enum.Font.Gotham
-BPHeaderSubtitle.TextSize = 10
-BPHeaderSubtitle.BackgroundTransparency = 1
-BPHeaderSubtitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- BACKPACK CONTAINER
-local BPScroll = Instance.new("ScrollingFrame", BackpackPanel)
-BPScroll.Size = UDim2.new(1, -15, 1, -60)
-BPScroll.Position = UDim2.new(0, 7.5, 0, 55)
-BPScroll.BackgroundTransparency = 1
-BPScroll.ScrollBarThickness = 4
-BPScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
-BPScroll.ClipsDescendants = true
-
-local BPContainer = Instance.new("Frame", BPScroll)
-BPContainer.Size = UDim2.new(1, 0, 1, 0)
-BPContainer.BackgroundTransparency = 1
-BPContainer.ClipsDescendants = true
-
-local BPLayout = Instance.new("UIListLayout", BPContainer)
-BPLayout.Padding = UDim.new(0, 6)
-BPLayout.SortOrder = Enum.SortOrder.LayoutOrder
+-- PLACEHOLDER MESSAGE
+local PlaceholderLabel = Instance.new("TextLabel", SetContainer)
+PlaceholderLabel.Size = UDim2.new(1, 0, 0, 100)
+PlaceholderLabel.Text = "⚙️ Settings Panel\n\nAdd your custom settings here\n\n• Toggle buttons\n• Sliders\n• Input fields\n• Etc..."
+PlaceholderLabel.TextColor3 = Color3.fromRGB(120, 120, 140)
+PlaceholderLabel.Font = Enum.Font.Gotham
+PlaceholderLabel.TextSize = 12
+PlaceholderLabel.BackgroundTransparency = 1
+PlaceholderLabel.TextWrapped = true
+PlaceholderLabel.TextYAlignment = Enum.TextYAlignment.Center
 
 --==================================
 -- HELPER FUNCTIONS
@@ -540,245 +425,6 @@ local function countLocations(category)
     end
     return count
 end
-
---==================================
--- SYSTEM MONITOR FUNCTIONS
---==================================
-local function updateSystemStats()
-    -- FPS
-    SystemStats.FPS = math.floor(1 / RunService.RenderStepped:Wait())
-    
-    -- Memory (approximate)
-    local success, memory = pcall(function()
-        return Stats:GetMemoryUsageMbForTag(Enum.DeveloperMemoryTag.Script)
-    end)
-    SystemStats.Memory = success and math.floor(memory) or 0
-    
-    -- Update labels
-    if FPSLabel then
-        FPSLabel.Text = "FPS: " .. SystemStats.FPS
-        -- Color code FPS
-        if SystemStats.FPS >= 45 then
-            FPSLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        elseif SystemStats.FPS >= 30 then
-            FPSLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        else
-            FPSLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        end
-    end
-    
-    if MemLabel then
-        MemLabel.Text = "RAM: " .. SystemStats.Memory .. "MB"
-        -- Color code memory
-        if SystemStats.Memory < 100 then
-            MemLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-        elseif SystemStats.Memory < 300 then
-            MemLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        else
-            MemLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        end
-    end
-    
-    if Settings.ShowFPS then
-        FPSLabel.Visible = true
-    else
-        FPSLabel.Visible = false
-    end
-    
-    if Settings.ShowMemory then
-        MemLabel.Visible = true
-    else
-        MemLabel.Visible = false
-    end
-end
-
---==================================
--- BACKPACK SCANNER
---==================================
-local function scanBackpack()
-    BackpackItems = {}
-    
-    local backpack = LP:FindFirstChild("Backpack")
-    if backpack then
-        for _, item in ipairs(backpack:GetChildren()) do
-            table.insert(BackpackItems, {
-                Name = item.Name,
-                Class = item.ClassName,
-                IsTool = item:IsA("Tool")
-            })
-        end
-    end
-    
-    -- Update backpack UI
-    if BPHeaderSubtitle then
-        BPHeaderSubtitle.Text = #BackpackItems .. " items"
-    end
-    
-    -- Clear and rebuild backpack list
-    for _, child in ipairs(BPContainer:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
-    end
-    
-    for i, item in ipairs(BackpackItems) do
-        local itemCard = Instance.new("Frame", BPContainer)
-        itemCard.Size = UDim2.new(1, 0, 0, 40)
-        itemCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-        Instance.new("UICorner", itemCard).CornerRadius = UDim.new(0, 6)
-        
-        local itemName = Instance.new("TextLabel", itemCard)
-        itemName.Size = UDim2.new(0.7, -10, 1, 0)
-        itemName.Position = UDim2.new(0, 10, 0, 0)
-        itemName.Text = item.Name
-        itemName.TextColor3 = Color3.new(1, 1, 1)
-        itemName.Font = Enum.Font.GothamBold
-        itemName.TextSize = 12
-        itemName.BackgroundTransparency = 1
-        itemName.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local itemType = Instance.new("TextLabel", itemCard)
-        itemType.Size = UDim2.new(0.3, -10, 1, 0)
-        itemType.Position = UDim2.new(0.7, 0, 0, 0)
-        itemType.Text = item.Class
-        itemType.TextColor3 = item.IsTool and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(150, 150, 170)
-        itemType.Font = Enum.Font.Gotham
-        itemType.TextSize = 10
-        itemType.BackgroundTransparency = 1
-        itemType.TextXAlignment = Enum.TextXAlignment.Right
-        
-        -- Tool indicator
-        if item.IsTool then
-            local toolBadge = Instance.new("TextLabel", itemCard)
-            toolBadge.Size = UDim2.new(0, 20, 0, 20)
-            toolBadge.Position = UDim2.new(1, -25, 0.5, -10)
-            toolBadge.Text = "🔨"
-            toolBadge.TextColor3 = Color3.fromRGB(255, 200, 100)
-            toolBadge.Font = Enum.Font.GothamBold
-            toolBadge.TextSize = 12
-            toolBadge.BackgroundTransparency = 1
-        end
-    end
-    
-    -- Update scroll size
-    local itemHeight = 46
-    local totalHeight = #BackpackItems * itemHeight
-    if totalHeight > BPScroll.AbsoluteSize.Y then
-        BPScroll.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-        BPContainer.Size = UDim2.new(1, 0, 0, totalHeight)
-    end
-end
-
---==================================
--- CREATE SETTINGS OPTIONS
---==================================
-local function createSettingOption(name, description, settingKey, defaultValue)
-    local settingFrame = Instance.new("Frame", SetContainer)
-    settingFrame.Size = UDim2.new(1, 0, 0, 50)
-    settingFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Instance.new("UICorner", settingFrame).CornerRadius = UDim.new(0, 6)
-    
-    -- Setting name
-    local nameLabel = Instance.new("TextLabel", settingFrame)
-    nameLabel.Size = UDim2.new(0.7, -10, 0, 25)
-    nameLabel.Position = UDim2.new(0, 10, 0, 8)
-    nameLabel.Text = name
-    nameLabel.TextColor3 = Color3.new(1, 1, 1)
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 12
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Description
-    local descLabel = Instance.new("TextLabel", settingFrame)
-    descLabel.Size = UDim2.new(0.7, -10, 0, 20)
-    descLabel.Position = UDim2.new(0, 10, 0, 30)
-    descLabel.Text = description
-    descLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-    descLabel.Font = Enum.Font.Gotham
-    descLabel.TextSize = 10
-    descLabel.BackgroundTransparency = 1
-    descLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Toggle button
-    local toggleBtn = Instance.new("TextButton", settingFrame)
-    toggleBtn.Size = UDim2.new(0, 50, 0, 25)
-    toggleBtn.Position = UDim2.new(1, -60, 0.5, -12.5)
-    toggleBtn.Font = Enum.Font.GothamBold
-    toggleBtn.TextSize = 11
-    toggleBtn.AutoButtonColor = false
-    
-    local function updateToggle()
-        local isOn = Settings[settingKey]
-        toggleBtn.Text = isOn and "ON" or "OFF"
-        toggleBtn.BackgroundColor3 = isOn and Color3.fromRGB(0, 180, 100) or Color3.fromRGB(180, 50, 50)
-        
-        -- Update system monitor visibility
-        if settingKey == "ShowFPS" then
-            FPSLabel.Visible = isOn
-        elseif settingKey == "ShowPing" then
-            PingLabel.Visible = isOn
-        elseif settingKey == "ShowMemory" then
-            MemLabel.Visible = isOn
-        end
-    end
-    
-    toggleBtn.MouseButton1Click:Connect(function()
-        Settings[settingKey] = not Settings[settingKey]
-        updateToggle()
-        showNotification("⚙️ Setting Changed", name .. ": " .. (Settings[settingKey] and "ON" or "OFF"), 
-            Settings[settingKey] and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 100, 100))
-    end)
-    
-    updateToggle()
-    Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)
-    
-    return settingFrame
-end
-
--- Create settings
-createSettingOption("Auto Speed Boost", "Increase walk speed automatically", "AutoSpeed", false)
-createSettingOption("Show FPS Counter", "Display FPS in system monitor", "ShowFPS", true)
-createSettingOption("Show Ping", "Display network ping", "ShowPing", true)
-createSettingOption("Show Memory Usage", "Display RAM usage", "ShowMemory", true)
-createSettingOption("Backpack Scanner", "Auto-scan backpack items", "ShowBackpack", false)
-createSettingOption("Notification Sound", "Play sound for notifications", "NotificationSound", true)
-
--- Speed multiplier slider
-local speedFrame = Instance.new("Frame", SetContainer)
-speedFrame.Size = UDim2.new(1, 0, 0, 60)
-speedFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-Instance.new("UICorner", speedFrame).CornerRadius = UDim.new(0, 6)
-
-local speedLabel = Instance.new("TextLabel", speedFrame)
-speedLabel.Size = UDim2.new(0.7, -10, 0, 25)
-speedLabel.Position = UDim2.new(0, 10, 0, 8)
-speedLabel.Text = "Speed Multiplier"
-speedLabel.TextColor3 = Color3.new(1, 1, 1)
-speedLabel.Font = Enum.Font.GothamBold
-speedLabel.TextSize = 12
-speedLabel.BackgroundTransparency = 1
-speedLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local speedValue = Instance.new("TextLabel", speedFrame)
-speedValue.Size = UDim2.new(0.3, -10, 0, 25)
-speedValue.Position = UDim2.new(0.7, 0, 0, 8)
-speedValue.Text = Settings.SpeedMultiplier .. "x"
-speedValue.TextColor3 = Color3.fromRGB(0, 200, 255)
-speedValue.Font = Enum.Font.GothamBold
-speedValue.TextSize = 12
-speedValue.BackgroundTransparency = 1
-speedValue.TextXAlignment = Enum.TextXAlignment.Right
-
-local speedDesc = Instance.new("TextLabel", speedFrame)
-speedDesc.Size = UDim2.new(1, -20, 0, 20)
-speedDesc.Position = UDim2.new(0, 10, 0, 40)
-speedDesc.Text = "Adjust walk speed multiplier"
-speedDesc.TextColor3 = Color3.fromRGB(150, 150, 170)
-speedDesc.Font = Enum.Font.Gotham
-speedDesc.TextSize = 10
-speedDesc.BackgroundTransparency = 1
-speedDesc.TextXAlignment = Enum.TextXAlignment.Left
 
 --==================================
 -- LOCATION CARD CREATION
@@ -986,7 +632,6 @@ local function showPanel(panelName)
     -- Reset button colors
     TeleportParentBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
     SettingsBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    BackpackBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
     
     if Panels[panelName] then
         Panels[panelName].Visible = true
@@ -999,9 +644,6 @@ local function showPanel(panelName)
             end
         elseif panelName == "Settings" then
             SettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-        elseif panelName == "Backpack" then
-            BackpackBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-            scanBackpack()
         end
     end
 end
@@ -1021,12 +663,6 @@ TPSearchBox:GetPropertyChangedSignal("Text"):Connect(updateLocationList)
 SettingsBtn.MouseButton1Click:Connect(function()
     if DropdownOpen then toggleDropdown() end
     showPanel("Settings")
-end)
-
-BackpackBtn.MouseButton1Click:Connect(function()
-    if DropdownOpen then toggleDropdown() end
-    showPanel("Backpack")
-    scanBackpack()
 end)
 
 --==================================
@@ -1079,16 +715,6 @@ UIS.InputBegan:Connect(function(input, gp)
 end)
 
 --==================================
--- SYSTEM MONITOR LOOP
---==================================
-task.spawn(function()
-    while true do
-        updateSystemStats()
-        task.wait(1)  -- Update every second
-    end
-end)
-
---==================================
 -- INITIALIZATION
 --==================================
 updateLocationList()
@@ -1096,13 +722,12 @@ showPanel("Teleport")
 
 -- Initial notification
 task.wait(0.5)
-showNotification("🎣 System Hub Loaded", 
-    "Teleport: " .. #Teleports .. " locations\nSettings: 6 options available", 
+showNotification("🎣 Clean Hub Loaded", 
+    "Teleport: " .. #Teleports .. " locations\nSettings: Empty panel ready", 
     Color3.fromRGB(0, 150, 255))
 
-print("✅ AmsHub with Settings Loaded!")
-print("📍 Teleport Locations: " .. #Teleports)
-print("⚙️ Settings Panel: 6 options with toggles")
-print("🎒 Backpack Scanner: Ready")
-print("📊 System Monitor: FPS, RAM, CPU")
+print("✅ Clean Hub Loaded!")
+print("📍 Teleport: " .. #Teleports .. " locations")
+print("⚙️ Settings: Empty panel ready for customization")
 print("🎯 RightShift to toggle")
+print("📱 Size: 400×320 pixels")
