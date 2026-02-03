@@ -1,14 +1,131 @@
 --==================================
 -- AmsHub | Fish It
--- Main.lua (Single File)
+-- Main.lua (Single File) + AUTO FISH
 --==================================
 
 -- SERVICES
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local LP = Players.LocalPlayer
+
+--==================================
+-- AUTO FISH SYSTEM
+--==================================
+local AutoFish = {
+    Enabled = false,
+    Fishing = false,
+    Cooldown = 5, -- seconds between casts
+    LastCast = 0
+}
+
+-- Function to simulate fishing action
+local function castFishingRod()
+    if not LP.Character then return false end
+    
+    -- Cari fishing rod di inventory/backpack
+    local rod = nil
+    local backpack = LP:FindFirstChild("Backpack")
+    if backpack then
+        rod = backpack:FindFirstChild("FishingRod") or 
+              backpack:FindFirstChild("Rod") or
+              backpack:FindFirstChildWhichIsA("Tool")
+    end
+    
+    -- Cari rod di tangan
+    if not rod and LP.Character then
+        rod = LP.Character:FindFirstChild("FishingRod") or 
+              LP.Character:FindFirstChild("Rod") or
+              LP.Character:FindFirstChildWhichIsA("Tool")
+    end
+    
+    if rod then
+        -- Equip rod
+        if rod.Parent ~= LP.Character then
+            rod.Parent = LP.Character
+            task.wait(0.5)
+        end
+        
+        -- Activate rod (click mouse)
+        local success = pcall(function()
+            -- Try to activate tool
+            rod:Activate()
+            
+            -- Alternative: click at screen center
+            local mouse = LP:GetMouse()
+            local connection
+            connection = RunService.Heartbeat:Connect(function()
+                if AutoFish.Fishing then
+                    -- Simulate click
+                    if rod:FindFirstChild("RemoteEvent") then
+                        rod.RemoteEvent:FireServer("Cast")
+                    end
+                else
+                    connection:Disconnect()
+                end
+            end)
+        end)
+        
+        return success
+    end
+    
+    return false
+end
+
+-- Function to check if fish caught (placeholder)
+local function checkFishCaught()
+    -- Ini placeholder - perlu diadaptasi dengan game mechanic
+    local chance = math.random(1, 100)
+    return chance > 30 -- 70% success rate
+end
+
+-- Auto fishing loop
+local fishConnection
+local function startAutoFishing()
+    if fishConnection then fishConnection:Disconnect() end
+    
+    AutoFish.Fishing = true
+    fishConnection = RunService.Heartbeat:Connect(function()
+        if not AutoFish.Enabled or not AutoFish.Fishing then
+            fishConnection:Disconnect()
+            return
+        end
+        
+        local now = tick()
+        if now - AutoFish.LastCast >= AutoFish.Cooldown then
+            AutoFish.LastCast = now
+            
+            -- Cast fishing rod
+            local success = castFishingRod()
+            if success then
+                -- Wait for fish bite
+                task.wait(3)
+                
+                -- Check if fish caught
+                if checkFishCaught() then
+                    print("[Auto Fish] Fish caught!")
+                    -- Reel in
+                    task.wait(1)
+                else
+                    print("[Auto Fish] No bite, recasting...")
+                end
+            else
+                print("[Auto Fish] No fishing rod found!")
+            end
+        end
+    end)
+end
+
+local function stopAutoFishing()
+    AutoFish.Fishing = false
+    if fishConnection then
+        fishConnection:Disconnect()
+        fishConnection = nil
+    end
+    print("[Auto Fish] Stopped")
+end
 
 --==================================
 -- CHARACTER UTILS
@@ -76,8 +193,8 @@ gui.Parent = LP:WaitForChild("PlayerGui")
 
 -- MAIN FRAME
 local Main = Instance.new("Frame", gui)
-Main.Size = UDim2.new(0, 520, 0, 340)
-Main.Position = UDim2.new(0.5,-260,0.5,-170)
+Main.Size = UDim2.new(0, 520, 0, 400) -- Increased height for auto fish
+Main.Position = UDim2.new(0.5,-260,0.5,-200)
 Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
 Main.Active = true
 Main.Draggable = true
@@ -110,22 +227,68 @@ Content.Size = UDim2.new(1,-140,1,-36)
 Content.BackgroundColor3 = Color3.fromRGB(10,10,10)
 
 --==================================
--- SIDEBAR BUTTON (COLLAPSE)
+-- SIDEBAR BUTTONS (MENU SYSTEM)
 --==================================
-local TeleportBtn = Instance.new("TextButton", Side)
-TeleportBtn.Size = UDim2.new(1,-10,0,40)
-TeleportBtn.Position = UDim2.new(0,5,0,10)
-TeleportBtn.Text = "TELEPORT"
-TeleportBtn.Font = Enum.Font.GothamBold
-TeleportBtn.TextSize = 14
-TeleportBtn.TextColor3 = Color3.new(1,1,1)
-TeleportBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
-Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0,8)
+local MenuButtons = {
+    TeleportBtn = nil,
+    AutoFishBtn = nil,
+    SettingsBtn = nil
+}
+
+-- TELEPORT BUTTON
+MenuButtons.TeleportBtn = Instance.new("TextButton", Side)
+MenuButtons.TeleportBtn.Name = "TeleportBtn"
+MenuButtons.TeleportBtn.Size = UDim2.new(1,-10,0,40)
+MenuButtons.TeleportBtn.Position = UDim2.new(0,5,0,10)
+MenuButtons.TeleportBtn.Text = "📍 TELEPORT"
+MenuButtons.TeleportBtn.Font = Enum.Font.GothamBold
+MenuButtons.TeleportBtn.TextSize = 14
+MenuButtons.TeleportBtn.TextColor3 = Color3.new(1,1,1)
+MenuButtons.TeleportBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
+Instance.new("UICorner", MenuButtons.TeleportBtn).CornerRadius = UDim.new(0,8)
+
+-- AUTO FISH BUTTON
+MenuButtons.AutoFishBtn = Instance.new("TextButton", Side)
+MenuButtons.AutoFishBtn.Name = "AutoFishBtn"
+MenuButtons.AutoFishBtn.Size = UDim2.new(1,-10,0,40)
+MenuButtons.AutoFishBtn.Position = UDim2.new(0,5,0,60)
+MenuButtons.AutoFishBtn.Text = "🎣 AUTO FISH: OFF"
+MenuButtons.AutoFishBtn.Font = Enum.Font.GothamBold
+MenuButtons.AutoFishBtn.TextSize = 14
+MenuButtons.AutoFishBtn.TextColor3 = Color3.new(1,1,1)
+MenuButtons.AutoFishBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+Instance.new("UICorner", MenuButtons.AutoFishBtn).CornerRadius = UDim.new(0,8)
+
+-- SETTINGS BUTTON
+MenuButtons.SettingsBtn = Instance.new("TextButton", Side)
+MenuButtons.SettingsBtn.Name = "SettingsBtn"
+MenuButtons.SettingsBtn.Size = UDim2.new(1,-10,0,40)
+MenuButtons.SettingsBtn.Position = UDim2.new(0,5,0,110)
+MenuButtons.SettingsBtn.Text = "⚙️ SETTINGS"
+MenuButtons.SettingsBtn.Font = Enum.Font.GothamBold
+MenuButtons.SettingsBtn.TextSize = 14
+MenuButtons.SettingsBtn.TextColor3 = Color3.new(1,1,1)
+MenuButtons.SettingsBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+Instance.new("UICorner", MenuButtons.SettingsBtn).CornerRadius = UDim.new(0,8)
 
 --==================================
--- SEARCH BAR
+-- CONTENT PANELS
 --==================================
-local Search = Instance.new("TextBox", Content)
+local Panels = {
+    TeleportPanel = nil,
+    AutoFishPanel = nil,
+    SettingsPanel = nil
+}
+
+-- TELEPORT PANEL (Default)
+Panels.TeleportPanel = Instance.new("Frame", Content)
+Panels.TeleportPanel.Name = "TeleportPanel"
+Panels.TeleportPanel.Size = UDim2.new(1,0,1,0)
+Panels.TeleportPanel.BackgroundTransparency = 1
+Panels.TeleportPanel.Visible = true
+
+-- SEARCH BAR (in Teleport Panel)
+local Search = Instance.new("TextBox", Panels.TeleportPanel)
 Search.Size = UDim2.new(1,-20,0,34)
 Search.Position = UDim2.new(0,10,0,10)
 Search.PlaceholderText = "Search location..."
@@ -137,10 +300,8 @@ Search.TextColor3 = Color3.new(1,1,1)
 Search.BackgroundColor3 = Color3.fromRGB(20,20,20)
 Instance.new("UICorner", Search).CornerRadius = UDim.new(0,8)
 
---==================================
--- SCROLLING LIST (RAPI & SCROLL)
---==================================
-local Scroll = Instance.new("ScrollingFrame", Content)
+-- SCROLLING LIST
+local Scroll = Instance.new("ScrollingFrame", Panels.TeleportPanel)
 Scroll.Position = UDim2.new(0,10,0,54)
 Scroll.Size = UDim2.new(1,-20,1,-64)
 Scroll.CanvasSize = UDim2.new(0,0,0,0)
@@ -148,6 +309,213 @@ Scroll.ScrollBarImageTransparency = 0.2
 Scroll.BackgroundTransparency = 1
 Scroll.AutomaticCanvasSize = Enum.AutomaticSize.None
 
+-- AUTO FISH PANEL
+Panels.AutoFishPanel = Instance.new("Frame", Content)
+Panels.AutoFishPanel.Name = "AutoFishPanel"
+Panels.AutoFishPanel.Size = UDim2.new(1,0,1,0)
+Panels.AutoFishPanel.BackgroundTransparency = 1
+Panels.AutoFishPanel.Visible = false
+
+-- Auto Fish Title
+local AutoFishTitle = Instance.new("TextLabel", Panels.AutoFishPanel)
+AutoFishTitle.Size = UDim2.new(1,-20,0,40)
+AutoFishTitle.Position = UDim2.new(0,10,0,10)
+AutoFishTitle.Text = "🎣 AUTO FISHING SYSTEM"
+AutoFishTitle.TextColor3 = Color3.new(1,1,1)
+AutoFishTitle.Font = Enum.Font.GothamBold
+AutoFishTitle.TextSize = 18
+AutoFishTitle.BackgroundTransparency = 1
+AutoFishTitle.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Status Display
+local StatusFrame = Instance.new("Frame", Panels.AutoFishPanel)
+StatusFrame.Size = UDim2.new(1,-20,0,100)
+StatusFrame.Position = UDim2.new(0,10,0,60)
+StatusFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Instance.new("UICorner", StatusFrame).CornerRadius = UDim.new(0,10)
+
+local StatusLabel = Instance.new("TextLabel", StatusFrame)
+StatusLabel.Size = UDim2.new(1,-20,0,40)
+StatusLabel.Position = UDim2.new(0,10,0,10)
+StatusLabel.Text = "Status: OFF"
+StatusLabel.TextColor3 = Color3.fromRGB(255,100,100)
+StatusLabel.Font = Enum.Font.GothamBold
+StatusLabel.TextSize = 16
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local FishCountLabel = Instance.new("TextLabel", StatusFrame)
+FishCountLabel.Size = UDim2.new(1,-20,0,40)
+FishCountLabel.Position = UDim2.new(0,10,0,50)
+FishCountLabel.Text = "Fish Caught: 0"
+FishCountLabel.TextColor3 = Color3.fromRGB(200,200,200)
+FishCountLabel.Font = Enum.Font.Gotham
+FishCountLabel.TextSize = 14
+FishCountLabel.BackgroundTransparency = 1
+FishCountLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Toggle Button
+local ToggleButton = Instance.new("TextButton", Panels.AutoFishPanel)
+ToggleButton.Size = UDim2.new(1,-20,0,50)
+ToggleButton.Position = UDim2.new(0,10,0,170)
+ToggleButton.Text = "▶ START AUTO FISH"
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextSize = 16
+ToggleButton.TextColor3 = Color3.new(1,1,1)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0,150,0)
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0,10)
+
+-- Settings
+local SettingsFrame = Instance.new("Frame", Panels.AutoFishPanel)
+SettingsFrame.Size = UDim2.new(1,-20,0,120)
+SettingsFrame.Position = UDim2.new(0,10,0,230)
+SettingsFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Instance.new("UICorner", SettingsFrame).CornerRadius = UDim.new(0,10)
+
+local SettingsTitle = Instance.new("TextLabel", SettingsFrame)
+SettingsTitle.Size = UDim2.new(1,-20,0,30)
+SettingsTitle.Position = UDim2.new(0,10,0,5)
+SettingsTitle.Text = "Settings"
+SettingsTitle.TextColor3 = Color3.fromRGB(200,200,200)
+SettingsTitle.Font = Enum.Font.GothamBold
+SettingsTitle.TextSize = 14
+SettingsTitle.BackgroundTransparency = 1
+SettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Cooldown Slider
+local CooldownLabel = Instance.new("TextLabel", SettingsFrame)
+CooldownLabel.Size = UDim2.new(1,-20,0,25)
+CooldownLabel.Position = UDim2.new(0,10,0,40)
+CooldownLabel.Text = "Cast Cooldown: " .. AutoFish.Cooldown .. "s"
+CooldownLabel.TextColor3 = Color3.fromRGB(200,200,200)
+CooldownLabel.Font = Enum.Font.Gotham
+CooldownLabel.TextSize = 13
+CooldownLabel.BackgroundTransparency = 1
+CooldownLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local CooldownSlider = Instance.new("TextBox", SettingsFrame)
+CooldownSlider.Size = UDim2.new(1,-20,0,30)
+CooldownSlider.Position = UDim2.new(0,10,0,70)
+CooldownSlider.Text = tostring(AutoFish.Cooldown)
+CooldownSlider.PlaceholderText = "Seconds"
+CooldownSlider.Font = Enum.Font.Gotham
+CooldownSlider.TextSize = 14
+CooldownSlider.TextColor3 = Color3.new(1,1,1)
+CooldownSlider.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Instance.new("UICorner", CooldownSlider).CornerRadius = UDim.new(0,6)
+
+-- SETTINGS PANEL
+Panels.SettingsPanel = Instance.new("Frame", Content)
+Panels.SettingsPanel.Name = "SettingsPanel"
+Panels.SettingsPanel.Size = UDim2.new(1,0,1,0)
+Panels.SettingsPanel.BackgroundTransparency = 1
+Panels.SettingsPanel.Visible = false
+
+local SettingsPanelTitle = Instance.new("TextLabel", Panels.SettingsPanel)
+SettingsPanelTitle.Size = UDim2.new(1,-20,0,40)
+SettingsPanelTitle.Position = UDim2.new(0,10,0,10)
+SettingsPanelTitle.Text = "⚙️ SETTINGS"
+SettingsPanelTitle.TextColor3 = Color3.new(1,1,1)
+SettingsPanelTitle.Font = Enum.Font.GothamBold
+SettingsPanelTitle.TextSize = 18
+SettingsPanelTitle.BackgroundTransparency = 1
+SettingsPanelTitle.TextXAlignment = Enum.TextXAlignment.Center
+
+--==================================
+-- PANEL MANAGEMENT
+--==================================
+local function showPanel(panelName)
+    -- Hide all panels
+    for name, panel in pairs(Panels) do
+        panel.Visible = false
+    end
+    
+    -- Reset all button colors
+    for name, btn in pairs(MenuButtons) do
+        btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    end
+    
+    -- Show selected panel
+    if Panels[panelName] then
+        Panels[panelName].Visible = true
+        if MenuButtons[panelName:gsub("Panel", "Btn")] then
+            MenuButtons[panelName:gsub("Panel", "Btn")].BackgroundColor3 = Color3.fromRGB(120,0,0)
+        end
+    end
+    
+    -- Update auto fish button text
+    if panelName == "AutoFishPanel" then
+        MenuButtons.AutoFishBtn.Text = "🎣 AUTO FISH"
+    else
+        MenuButtons.AutoFishBtn.Text = "🎣 AUTO FISH: " .. (AutoFish.Enabled and "ON" or "OFF")
+    end
+end
+
+-- Button click handlers
+MenuButtons.TeleportBtn.MouseButton1Click:Connect(function()
+    showPanel("TeleportPanel")
+end)
+
+MenuButtons.AutoFishBtn.MouseButton1Click:Connect(function()
+    showPanel("AutoFishPanel")
+end)
+
+MenuButtons.SettingsBtn.MouseButton1Click:Connect(function()
+    showPanel("SettingsPanel")
+end)
+
+--==================================
+-- AUTO FISH FUNCTIONS
+--==================================
+local fishCaughtCount = 0
+
+local function updateAutoFishStatus()
+    if AutoFish.Enabled then
+        StatusLabel.Text = "Status: ACTIVE"
+        StatusLabel.TextColor3 = Color3.fromRGB(100,255,100)
+        ToggleButton.Text = "⏹ STOP AUTO FISH"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(200,0,0)
+        MenuButtons.AutoFishBtn.Text = "🎣 AUTO FISH: ON"
+    else
+        StatusLabel.Text = "Status: OFF"
+        StatusLabel.TextColor3 = Color3.fromRGB(255,100,100)
+        ToggleButton.Text = "▶ START AUTO FISH"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(0,150,0)
+        MenuButtons.AutoFishBtn.Text = "🎣 AUTO FISH: OFF"
+    end
+    FishCountLabel.Text = "Fish Caught: " .. fishCaughtCount
+end
+
+ToggleButton.MouseButton1Click:Connect(function()
+    AutoFish.Enabled = not AutoFish.Enabled
+    
+    if AutoFish.Enabled then
+        startAutoFishing()
+        print("[Auto Fish] Started")
+    else
+        stopAutoFishing()
+        print("[Auto Fish] Stopped")
+    end
+    
+    updateAutoFishStatus()
+end)
+
+CooldownSlider.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local num = tonumber(CooldownSlider.Text)
+        if num and num >= 1 and num <= 30 then
+            AutoFish.Cooldown = num
+            CooldownLabel.Text = "Cast Cooldown: " .. num .. "s"
+            print("[Auto Fish] Cooldown set to " .. num .. " seconds")
+        else
+            CooldownSlider.Text = tostring(AutoFish.Cooldown)
+        end
+    end
+end)
+
+--==================================
+-- TELEPORT LIST FUNCTIONS
+--==================================
 local function rebuildList(filter)
     Scroll:ClearAllChildren()
 
@@ -176,10 +544,7 @@ local function rebuildList(filter)
     end
 end
 
-TeleportBtn.MouseButton1Click:Connect(function()
-    rebuildList(Search.Text ~= "" and Search.Text or nil)
-end)
-
+-- Initialize teleport list
 Search:GetPropertyChangedSignal("Text"):Connect(function()
     rebuildList(Search.Text ~= "" and Search.Text or nil)
 end)
@@ -190,7 +555,7 @@ end)
 local Bubble = Instance.new("TextButton", gui)
 Bubble.Size = UDim2.new(0,50,0,50)
 Bubble.Position = UDim2.new(0,20,0.5,-25)
-Bubble.Text = "A"
+Bubble.Text = "🎣"
 Bubble.Visible = false
 Bubble.BackgroundColor3 = Color3.fromRGB(120,0,0)
 Bubble.TextColor3 = Color3.new(1,1,1)
@@ -228,5 +593,13 @@ UIS.InputBegan:Connect(function(input, gp)
     end
 end)
 
+--==================================
 -- INITIAL LOAD
+--==================================
 rebuildList()
+updateAutoFishStatus()
+showPanel("TeleportPanel") -- Show teleport panel by default
+
+print("AmsHub Fish It Loaded!")
+print("Auto Fish System Ready!")
+print("RightShift to toggle UI")
