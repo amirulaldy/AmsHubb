@@ -1,280 +1,93 @@
 --==================================
--- FIXED ROD SCANNER + UI STAY IN PANEL
+-- AmsHub | Fish It
+-- Main.lua (Single File) - CLEAN VERSION
 --==================================
 
 -- SERVICES
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LP = Players.LocalPlayer
 
 --==================================
--- FIXED ROD DETECTION SYSTEM
+-- CHARACTER UTILS
 --==================================
-local RodDatabase = {
-    {
-        Name = "Diamond Rod",
-        DisplayName = "Diamond Rod",
-        Type = "Legendary",
-        Speed = 167,
-        Weight = 1000000,
-        Tier = 5,
-        Keywords = {"diamond", "legendary"}
-    },
-    {
-        Name = "Element Rod",
-        DisplayName = "Element Rod", 
-        Type = "Epic",
-        Speed = 130,
-        Weight = 800,
-        Tier = 4,
-        Keywords = {"element", "epic"}
-    },
-    {
-        Name = "Ghostfinn Rod",
-        DisplayName = "Ghostfinn Rod",
-        Type = "Rare",
-        Speed = 118,
-        Weight = 600,
-        Tier = 3,
-        Keywords = {"ghostfinn", "ghost", "rare"}
-    },
-    {
-        Name = "Golden Rod",
-        DisplayName = "Golden Rod",
-        Type = "Epic",
-        Speed = 140,
-        Weight = 700,
-        Tier = 4,
-        Keywords = {"golden", "gold"}
-    },
-    {
-        Name = "Crystal Rod",
-        DisplayName = "Crystal Rod",
-        Type = "Rare",
-        Speed = 125,
-        Weight = 550,
-        Tier = 3,
-        Keywords = {"crystal"}
-    },
-    {
-        Name = "Iron Rod",
-        DisplayName = "Iron Rod",
-        Type = "Uncommon",
-        Speed = 105,
-        Weight = 400,
-        Tier = 2,
-        Keywords = {"iron"}
-    },
-    {
-        Name = "Wooden Rod",
-        DisplayName = "Wooden Rod",
-        Type = "Common",
-        Speed = 100,
-        Weight = 300,
-        Tier = 1,
-        Keywords = {"wooden", "wood"}
-    },
-    {
-        Name = "Basic Fishing Rod",
-        DisplayName = "Basic Fishing Rod",
-        Type = "Common",
-        Speed = 95,
-        Weight = 250,
-        Tier = 1,
-        Keywords = {"basic", "fishing"}
-    }
-}
-
--- FIXED ROD SCANNER
-local function deepScanForRods()
-    print("[DEEP SCAN] Starting advanced rod detection...")
-    local foundRods = {}
-    
-    -- Method 1: Check Player's Tools directly
-    if LP.Character then
-        for _, child in ipairs(LP.Character:GetDescendants()) do
-            if child:IsA("Tool") then
-                local toolName = child.Name:lower()
-                for _, rodData in ipairs(RodDatabase) do
-                    for _, keyword in ipairs(rodData.Keywords) do
-                        if string.find(toolName, keyword:lower()) then
-                            table.insert(foundRods, {
-                                Object = child,
-                                Data = rodData,
-                                Location = "Character"
-                            })
-                            print("[DEEP SCAN] Found on character:", rodData.DisplayName)
-                            break
-                        end
-                    end
-                end
-                
-                -- Generic rod detection
-                if string.find(toolName, "rod") or string.find(toolName, "pole") then
-                    table.insert(foundRods, {
-                        Object = child,
-                        Data = {
-                            DisplayName = child.Name,
-                            Type = "Generic",
-                            Speed = 100,
-                            Weight = 300,
-                            Tier = 1
-                        },
-                        Location = "Character"
-                    })
-                    print("[DEEP SCAN] Found generic rod:", child.Name)
-                end
-            end
-        end
-    end
-    
-    -- Method 2: Check Backpack with better detection
-    local backpack = LP:FindFirstChild("Backpack")
-    if backpack then
-        for _, tool in ipairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") then
-                local toolName = tool.Name:lower()
-                
-                -- Check for exact matches first
-                for _, rodData in ipairs(RodDatabase) do
-                    local rodNameLower = rodData.Name:lower()
-                    if toolName == rodNameLower then
-                        table.insert(foundRods, {
-                            Object = tool,
-                            Data = rodData,
-                            Location = "Backpack"
-                        })
-                        print("[DEEP SCAN] Exact match in backpack:", rodData.DisplayName)
-                        break
-                    end
-                end
-                
-                -- Check for partial matches
-                for _, rodData in ipairs(RodDatabase) do
-                    for _, keyword in ipairs(rodData.Keywords) do
-                        if string.find(toolName, keyword:lower()) then
-                            table.insert(foundRods, {
-                                Object = tool,
-                                Data = rodData,
-                                Location = "Backpack"
-                            })
-                            print("[DEEP SCAN] Partial match in backpack:", rodData.DisplayName)
-                            break
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Method 3: Check StarterPack (common in fishing games)
-    local starterPack = game:GetService("StarterPack")
-    if starterPack then
-        for _, tool in ipairs(starterPack:GetChildren()) do
-            if tool:IsA("Tool") then
-                local toolName = tool.Name:lower()
-                if string.find(toolName, "rod") or string.find(toolName, "fishing") then
-                    -- Try to clone it to backpack
-                    local clone = tool:Clone()
-                    clone.Parent = LP.Backpack
-                    
-                    table.insert(foundRods, {
-                        Object = clone,
-                        Data = {
-                            DisplayName = tool.Name,
-                            Type = "Starter",
-                            Speed = 95,
-                            Weight = 250,
-                            Tier = 1
-                        },
-                        Location = "StarterPack"
-                    })
-                    print("[DEEP SCAN] Cloned from StarterPack:", tool.Name)
-                end
-            end
-        end
-    end
-    
-    -- Method 4: Check Workspace for fishing rods (some games place them there)
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Tool") and (obj.Name:find("Rod") or obj.Name:find("Fishing")) then
-            if obj:FindFirstChild("Handle") then
-                table.insert(foundRods, {
-                    Object = obj,
-                    Data = {
-                        DisplayName = obj.Name,
-                        Type = "Workspace",
-                        Speed = 100,
-                        Weight = 300,
-                        Tier = 1
-                    },
-                    Location = "Workspace"
-                })
-                print("[DEEP SCAN] Found in Workspace:", obj.Name)
-            end
-        end
-    end
-    
-    -- Method 5: MANUAL ROD CREATION (Jika tidak ada rod ditemukan)
-    if #foundRods == 0 then
-        print("[DEEP SCAN] No rods found, creating manual fishing rod...")
-        
-        -- Create a basic fishing rod tool
-        local manualRod = Instance.new("Tool")
-        manualRod.Name = "Basic Fishing Rod"
-        manualRod.CanBeDropped = false
-        
-        local handle = Instance.new("Part")
-        handle.Name = "Handle"
-        handle.Size = Vector3.new(1, 4, 1)
-        handle.Parent = manualRod
-        
-        manualRod.Parent = LP.Backpack
-        
-        table.insert(foundRods, {
-            Object = manualRod,
-            Data = {
-                DisplayName = "Basic Fishing Rod",
-                Type = "Manual",
-                Speed = 95,
-                Weight = 250,
-                Tier = 1
-            },
-            Location = "Manual"
-        })
-    end
-    
-    print("[DEEP SCAN] Completed. Found", #foundRods, "rods")
-    return foundRods
+local function getHRP()
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    return char:WaitForChild("HumanoidRootPart")
 end
 
 --==================================
--- FIXED UI PANEL (NO SCROLL ESCAPE)
+-- TELEPORT SETTINGS (FAST, NO FREEZE)
+--==================================
+local TELEPORT_OFFSET = Vector3.new(0, 3, 0) -- kecil, presisi
+local TELEPORT_TIME = 0.04 -- makin kecil makin instan (0.03–0.06 recommended)
+
+--==================================
+-- TELEPORT DATA (KOORDINAT LENGKAP)
+--==================================
+local Teleports = {
+    -- ISLAND
+    {name="Fisherman Island", cat="Island", cf=CFrame.new(197.34857177734375, 2.6072463989257812, 2796.57373046875)},
+    {name="Kohana", cat="Island", cf=CFrame.new(-624.4239501953125, 7.744749546051025, 676.2808227539062)},
+    {name="Tropical Grove", cat="Island", cf=CFrame.new(-2033.400146484375, 6.2680158615112305, 3715.0341796875)},
+    {name="Ancient Jungle", cat="Island", cf=CFrame.new(1463.75439453125, 7.6254987716674805, -321.6741943359375)},
+    {name="Creater Island", cat="Island", cf=CFrame.new(1012.2926635742188, 3.6445138454437256, 5153.46435546875)},
+
+    -- DEPTH
+    {name="Coral Reefs", cat="Depth", cf=CFrame.new(-2920.48095703125, 3.2499992847442627, 2072.742919921875)},
+    {name="Esoteric Depths", cat="Depth", cf=CFrame.new(3208.166259765625, -1302.8551025390625, 1446.6112060546875)},
+    {name="Crystal Depths", cat="Depth", cf=CFrame.new(5637, -904.9847412109375, 15354)},
+    {name="Kohana Volcano", cat="Depth", cf=CFrame.new(-424.22802734375, 7.2453107833862305, 123.47695922851562)},
+
+    -- SECRET
+    {name="Ancient Ruin", cat="Secret", cf=CFrame.new(6098.16845703125, -585.92431640625, 4649.107421875)},
+    {name="Sacred Temple", cat="Secret", cf=CFrame.new(1467.5760498046875, -22.1250057220459, -651.3453979492188)},
+    {name="Treasure Room", cat="Secret", cf=CFrame.new(-3631.212646484375, -279.07427978515625, -1599.5411376953125)},
+    {name="Pirate Cove", cat="Secret", cf=CFrame.new(3474.528076171875, 4.192470550537109, 3489.54150390625)},
+    {name="Pirate Treasure Room", cat="Secret", cf=CFrame.new(3301.19775390625, -305.0702819824219, 3039.332763671875)},
+    {name="Sisyphus Statue", cat="Secret", cf=CFrame.new(-3785.260009765625, -135.07435607910156, -951.13818359375)},
+}
+
+--==================================
+-- FAST SMOOTH TELEPORT (NO FREEZE)
+--==================================
+local function fastSmoothTeleport(cf)
+    local hrp = getHRP()
+    local targetCF = cf + TELEPORT_OFFSET
+
+    -- Tween sangat cepat & linear → halus, instan, tidak mengganggu aksi (mancing)
+    local tween = TweenService:Create(
+        hrp,
+        TweenInfo.new(TELEPORT_TIME, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
+        {CFrame = targetCF}
+    )
+    tween:Play()
+end
+
+--==================================
+-- UI CREATION (CLEAN & SIMPLE)
 --==================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "AmsHubFixed"
+gui.Name = "AmsHub"
 gui.ResetOnSpawn = false
 gui.Parent = LP:WaitForChild("PlayerGui")
 
--- MAIN FRAME dengan CLIPS DESCENDANTS
+-- MAIN FRAME (FIXED SIZE, NO SCROLL ESCAPE)
 local Main = Instance.new("Frame", gui)
-Main.Size = UDim2.new(0, 600, 0, 450)
-Main.Position = UDim2.new(0.5, -300, 0.5, -225)
+Main.Size = UDim2.new(0, 520, 0, 400)
+Main.Position = UDim2.new(0.5, -260, 0.5, -200)
 Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Main.Active = true
 Main.Draggable = true
-Main.ClipsDescendants = true  -- INI YANG PENTING!
+Main.ClipsDescendants = true  -- INI PENTING! Biar tidak keluar panel
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
--- TITLE BAR (FIXED POSITION)
+-- TITLE BAR
 local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1, 0, 0, 36)
-Title.Text = "🎣 AmsHub | Fixed UI"
+Title.Text = "🎣 AmsHub | Fish It Teleport"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 16
@@ -285,309 +98,204 @@ local TitlePadding = Instance.new("UIPadding")
 TitlePadding.PaddingLeft = UDim.new(0, 12)
 TitlePadding.Parent = Title
 
--- SIDEBAR (FIXED POSITION - NO SCROLL)
+-- SIDEBAR (SIMPLE, 1 BUTTON)
 local Side = Instance.new("Frame", Main)
 Side.Position = UDim2.new(0, 0, 0, 36)
-Side.Size = UDim2.new(0, 150, 1, -36)
+Side.Size = UDim2.new(0, 140, 1, -36)
 Side.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Side.ClipsDescendants = true
 
--- CONTENT AREA (FIXED POSITION)
+-- CONTENT AREA (SCROLL SAFE)
 local Content = Instance.new("Frame", Main)
-Content.Position = UDim2.new(0, 150, 0, 36)
-Content.Size = UDim2.new(1, -150, 1, -36)
+Content.Position = UDim2.new(0, 140, 0, 36)
+Content.Size = UDim2.new(1, -140, 1, -36)
 Content.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Content.ClipsDescendants = true  -- INI JUGA!
 
 --==================================
--- SCROLLING SYSTEM YANG TIDAK KELUAR PANEL
+-- TELEPORT BUTTON IN SIDEBAR
 --==================================
-local function createFixedScrollFrame(parent, position, size)
-    local scrollFrame = Instance.new("ScrollingFrame", parent)
-    scrollFrame.Size = size
-    scrollFrame.Position = position
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.ScrollBarThickness = 6
-    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(120, 0, 0)
-    scrollFrame.BorderSizePixel = 0
-    scrollFrame.ClipsDescendants = true  -- INI PENTING!
+local TeleportBtn = Instance.new("TextButton", Side)
+TeleportBtn.Size = UDim2.new(1, -10, 0, 40)
+TeleportBtn.Position = UDim2.new(0, 5, 0, 10)
+TeleportBtn.Text = "📍 TELEPORT"
+TeleportBtn.Font = Enum.Font.GothamBold
+TeleportBtn.TextSize = 14
+TeleportBtn.TextColor3 = Color3.new(1, 1, 1)
+TeleportBtn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+TeleportBtn.AutoButtonColor = false
+Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0, 8)
+
+-- CATEGORY FILTER BUTTONS
+local Categories = {"All", "Island", "Depth", "Secret"}
+local CategoryButtons = {}
+local SelectedCategory = "All"
+
+for i, cat in ipairs(Categories) do
+    local catBtn = Instance.new("TextButton", Side)
+    catBtn.Size = UDim2.new(1, -10, 0, 35)
+    catBtn.Position = UDim2.new(0, 5, 0, 60 + (i-1)*45)
+    catBtn.Text = cat:upper()
+    catBtn.Font = Enum.Font.GothamBold
+    catBtn.TextSize = 12
+    catBtn.TextColor3 = Color3.new(1, 1, 1)
+    catBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    catBtn.AutoButtonColor = false
+    Instance.new("UICorner", catBtn).CornerRadius = UDim.new(0, 6)
     
-    -- Container untuk konten (supaya tidak keluar)
-    local container = Instance.new("Frame", scrollFrame)
-    container.Size = UDim2.new(1, 0, 1, 0)
-    container.BackgroundTransparency = 1
-    container.ClipsDescendants = true
+    if cat == "All" then
+        catBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+    end
     
-    -- UIListLayout di dalam container
-    local listLayout = Instance.new("UIListLayout", container)
-    listLayout.Padding = UDim.new(0, 5)
-    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    
-    -- Update canvas size tapi tetap dalam bounds
-    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        local contentHeight = listLayout.AbsoluteContentSize.Y
-        local maxHeight = scrollFrame.AbsoluteSize.Y
-        
-        -- Pastikan tidak melebihi max height
-        if contentHeight > maxHeight then
-            scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-            container.Size = UDim2.new(1, 0, 0, contentHeight)
-        else
-            scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-            container.Size = UDim2.new(1, 0, 1, 0)
+    catBtn.MouseButton1Click:Connect(function()
+        SelectedCategory = cat
+        for _, btn in pairs(CategoryButtons) do
+            btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         end
+        catBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+        rebuildList()
     end)
     
-    return scrollFrame, container
+    CategoryButtons[cat] = catBtn
 end
 
 --==================================
--- SIDEBAR MENU (FIXED - TIDAK SCROLL)
+-- SEARCH BAR (FIXED POSITION)
 --==================================
-local MenuButtons = {}
+local SearchContainer = Instance.new("Frame", Content)
+SearchContainer.Size = UDim2.new(1, -20, 0, 50)
+SearchContainer.Position = UDim2.new(0, 10, 0, 10)
+SearchContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
 
-MenuButtons.Teleport = Instance.new("TextButton", Side)
-MenuButtons.Teleport.Size = UDim2.new(1, -10, 0, 40)
-MenuButtons.Teleport.Position = UDim2.new(0, 5, 0, 10)
-MenuButtons.Teleport.Text = "📍 TELEPORT"
-MenuButtons.Teleport.Font = Enum.Font.GothamBold
-MenuButtons.Teleport.TextSize = 14
-MenuButtons.Teleport.TextColor3 = Color3.new(1, 1, 1)
-MenuButtons.Teleport.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
-MenuButtons.Teleport.AutoButtonColor = false
-Instance.new("UICorner", MenuButtons.Teleport).CornerRadius = UDim.new(0, 8)
+local SearchIcon = Instance.new("TextLabel", SearchContainer)
+SearchIcon.Size = UDim2.new(0, 40, 1, 0)
+SearchIcon.Text = "🔍"
+SearchIcon.Font = Enum.Font.Gotham
+SearchIcon.TextSize = 16
+SearchIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+SearchIcon.BackgroundTransparency = 1
 
-MenuButtons.AutoFish = Instance.new("TextButton", Side)
-MenuButtons.AutoFish.Size = UDim2.new(1, -10, 0, 40)
-MenuButtons.AutoFish.Position = UDim2.new(0, 5, 0, 60)
-MenuButtons.AutoFish.Text = "🎣 AUTO FISH"
-MenuButtons.AutoFish.Font = Enum.Font.GothamBold
-MenuButtons.AutoFish.TextSize = 14
-MenuButtons.AutoFish.TextColor3 = Color3.new(1, 1, 1)
-MenuButtons.AutoFish.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-MenuButtons.AutoFish.AutoButtonColor = false
-Instance.new("UICorner", MenuButtons.AutoFish).CornerRadius = UDim.new(0, 8)
-
-MenuButtons.RodScanner = Instance.new("TextButton", Side)
-MenuButtons.RodScanner.Size = UDim2.new(1, -10, 0, 40)
-MenuButtons.RodScanner.Position = UDim2.new(0, 5, 0, 110)
-MenuButtons.RodScanner.Text = "🔍 SCAN RODS"
-MenuButtons.RodScanner.Font = Enum.Font.GothamBold
-MenuButtons.RodScanner.TextSize = 14
-MenuButtons.RodScanner.TextColor3 = Color3.new(1, 1, 1)
-MenuButtons.RodScanner.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-MenuButtons.RodScanner.AutoButtonColor = false
-Instance.new("UICorner", MenuButtons.RodScanner).CornerRadius = UDim.new(0, 8)
+local Search = Instance.new("TextBox", SearchContainer)
+Search.Size = UDim2.new(1, -50, 1, 0)
+Search.Position = UDim2.new(0, 40, 0, 0)
+Search.PlaceholderText = "Search location..."
+Search.Text = ""
+Search.ClearTextOnFocus = false
+Search.Font = Enum.Font.Gotham
+Search.TextSize = 14
+Search.TextColor3 = Color3.new(1, 1, 1)
+Search.BackgroundTransparency = 1
+Search.TextXAlignment = Enum.TextXAlignment.Left
 
 --==================================
--- CONTENT PANELS (FIXED SCROLL)
+-- SCROLLING LIST (FIXED - TIDAK KELUAR PANEL)
 --==================================
-local Panels = {}
+local Scroll = Instance.new("ScrollingFrame", Content)
+Scroll.Position = UDim2.new(0, 10, 0, 70)
+Scroll.Size = UDim2.new(1, -20, 1, -80)
+Scroll.BackgroundTransparency = 1
+Scroll.ScrollBarThickness = 6
+Scroll.ScrollBarImageColor3 = Color3.fromRGB(120, 0, 0)
+Scroll.BorderSizePixel = 0
+Scroll.ClipsDescendants = true  -- INI PENTING!
 
--- TELEPORT PANEL
-Panels.Teleport = Instance.new("Frame", Content)
-Panels.Teleport.Size = UDim2.new(1, 0, 1, 0)
-Panels.Teleport.BackgroundTransparency = 1
-Panels.Teleport.Visible = true
+-- Container untuk list items (agar tidak keluar bounds)
+local ListContainer = Instance.new("Frame", Scroll)
+ListContainer.Size = UDim2.new(1, 0, 1, 0)
+ListContainer.BackgroundTransparency = 1
+ListContainer.ClipsDescendants = true
 
--- Search bar (FIXED POSITION - tidak ikut scroll)
-local SearchBar = Instance.new("Frame", Panels.Teleport)
-SearchBar.Size = UDim2.new(1, -20, 0, 50)
-SearchBar.Position = UDim2.new(0, 10, 0, 10)
-SearchBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Instance.new("UICorner", SearchBar).CornerRadius = UDim.new(0, 8)
+-- UIListLayout di dalam container
+local ListLayout = Instance.new("UIListLayout", ListContainer)
+ListLayout.Padding = UDim.new(0, 6)
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local SearchBox = Instance.new("TextBox", SearchBar)
-SearchBox.Size = UDim2.new(1, -20, 1, -10)
-SearchBox.Position = UDim2.new(0, 10, 0, 5)
-SearchBox.PlaceholderText = "Search locations..."
-SearchBox.Text = ""
-SearchBox.Font = Enum.Font.Gotham
-SearchBox.TextSize = 14
-SearchBox.TextColor3 = Color3.new(1, 1, 1)
-SearchBox.BackgroundTransparency = 1
-
--- Scroll frame untuk locations (FIXED - tidak keluar panel)
-local TeleportScroll, TeleportContainer = createFixedScrollFrame(
-    Panels.Teleport,
-    UDim2.new(0, 10, 0, 70),
-    UDim2.new(1, -20, 1, -80)
-)
-
--- AUTO FISH PANEL
-Panels.AutoFish = Instance.new("Frame", Content)
-Panels.AutoFish.Size = UDim2.new(1, 0, 1, 0)
-Panels.AutoFish.BackgroundTransparency = 1
-Panels.AutoFish.Visible = false
-
--- Rod Scanner Panel
-Panels.RodScanner = Instance.new("Frame", Content)
-Panels.RodScanner.Size = UDim2.new(1, 0, 1, 0)
-Panels.RodScanner.BackgroundTransparency = 1
-Panels.RodScanner.Visible = false
-
---==================================
--- ROD SCANNER UI (FIXED SCROLL)
---==================================
-local ScannerTitle = Instance.new("TextLabel", Panels.RodScanner)
-ScannerTitle.Size = UDim2.new(1, -20, 0, 40)
-ScannerTitle.Position = UDim2.new(0, 10, 0, 10)
-ScannerTitle.Text = "🔍 ROD SCANNER"
-ScannerTitle.TextColor3 = Color3.new(1, 1, 1)
-ScannerTitle.Font = Enum.Font.GothamBold
-ScannerTitle.TextSize = 18
-ScannerTitle.BackgroundTransparency = 1
-ScannerTitle.TextXAlignment = Enum.TextXAlignment.Center
-
-local ScanButton = Instance.new("TextButton", Panels.RodScanner)
-ScanButton.Size = UDim2.new(1, -20, 0, 50)
-ScanButton.Position = UDim2.new(0, 10, 0, 60)
-ScanButton.Text = "START DEEP SCAN"
-ScanButton.Font = Enum.Font.GothamBold
-ScanButton.TextSize = 16
-ScanButton.TextColor3 = Color3.new(1, 1, 1)
-ScanButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-Instance.new("UICorner", ScanButton).CornerRadius = UDim.new(0, 10)
-
-local StatusLabel = Instance.new("TextLabel", Panels.RodScanner)
-StatusLabel.Size = UDim2.new(1, -20, 0, 40)
-StatusLabel.Position = UDim2.new(0, 10, 0, 120)
-StatusLabel.Text = "Status: Ready to scan"
-StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 14
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
-
--- Scroll frame untuk hasil scan (FIXED)
-local ResultScroll, ResultContainer = createFixedScrollFrame(
-    Panels.RodScanner,
-    UDim2.new(0, 10, 0, 170),
-    UDim2.new(1, -20, 1, -180)
-)
-
---==================================
--- PANEL MANAGEMENT
---==================================
-local function showPanel(panelName)
-    -- Hide all panels
-    for name, panel in pairs(Panels) do
-        panel.Visible = false
-    end
-    
-    -- Reset button colors
-    for name, btn in pairs(MenuButtons) do
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    end
-    
-    -- Show selected panel
-    if Panels[panelName] then
-        Panels[panelName].Visible = true
-        if MenuButtons[panelName] then
-            MenuButtons[panelName].BackgroundColor3 = Color3.fromRGB(120, 0, 0)
-        end
-    end
-end
-
-MenuButtons.Teleport.MouseButton1Click:Connect(function()
-    showPanel("Teleport")
-end)
-
-MenuButtons.AutoFish.MouseButton1Click:Connect(function()
-    showPanel("AutoFish")
-end)
-
-MenuButtons.RodScanner.MouseButton1Click:Connect(function()
-    showPanel("RodScanner")
-end)
-
---==================================
--- ROD SCANNER FUNCTION
---==================================
-ScanButton.MouseButton1Click:Connect(function()
-    StatusLabel.Text = "Scanning... Please wait"
-    StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-    
-    -- Clear previous results
-    for _, child in ipairs(ResultContainer:GetChildren()) do
-        if child:IsA("Frame") then
+-- Function untuk rebuild list dengan filter
+local function rebuildList()
+    -- Clear semua child di container
+    for _, child in ipairs(ListContainer:GetChildren()) do
+        if child:IsA("TextButton") then
             child:Destroy()
         end
     end
     
-    task.wait(0.5)
+    local searchText = Search.Text:lower()
+    local itemsAdded = 0
     
-    -- Start deep scan
-    local foundRods = deepScanForRods()
-    
-    if #foundRods == 0 then
-        StatusLabel.Text = "❌ No rods found"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    for _, tp in ipairs(Teleports) do
+        -- Filter berdasarkan kategori
+        local categoryMatch = (SelectedCategory == "All") or (tp.cat == SelectedCategory)
         
-        -- Show "no rods" message
-        local noRodsFrame = Instance.new("Frame", ResultContainer)
-        noRodsFrame.Size = UDim2.new(1, 0, 0, 100)
-        noRodsFrame.BackgroundTransparency = 1
+        -- Filter berdasarkan search text
+        local searchMatch = (searchText == "") or 
+                           (string.find(tp.name:lower(), searchText, 1, true)) or
+                           (string.find(tp.cat:lower(), searchText, 1, true))
         
-        local message = Instance.new("TextLabel", noRodsFrame)
-        message.Size = UDim2.new(1, 0, 1, 0)
-        message.Text = "⚠️ No fishing rods found!\n\nMake sure you have a fishing rod in your:\n• Backpack\n• Character\n• StarterPack"
-        message.TextColor3 = Color3.fromRGB(255, 150, 150)
-        message.Font = Enum.Font.Gotham
-        message.TextSize = 14
-        message.BackgroundTransparency = 1
-        message.TextWrapped = true
-        
-    else
-        StatusLabel.Text = "✅ Found " .. #foundRods .. " rods"
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        
-        -- Display found rods
-        for i, rodInfo in ipairs(foundRods) do
-            local rodFrame = Instance.new("Frame", ResultContainer)
-            rodFrame.Size = UDim2.new(1, 0, 0, 80)
-            rodFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-            Instance.new("UICorner", rodFrame).CornerRadius = UDim.new(0, 8)
+        if categoryMatch and searchMatch then
+            local btn = Instance.new("TextButton", ListContainer)
+            btn.Size = UDim2.new(1, 0, 0, 50)
+            btn.LayoutOrder = itemsAdded
+            btn.Text = tp.name .. "\n[" .. tp.cat .. "]"
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 13
+            btn.TextColor3 = Color3.new(1, 1, 1)
+            btn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+            btn.AutoButtonColor = false
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
             
-            local rodName = Instance.new("TextLabel", rodFrame)
-            rodName.Size = UDim2.new(1, -20, 0, 30)
-            rodName.Position = UDim2.new(0, 10, 0, 10)
-            rodName.Text = rodInfo.Data.DisplayName
-            rodName.TextColor3 = Color3.new(1, 1, 1)
-            rodName.Font = Enum.Font.GothamBold
-            rodName.TextSize = 16
-            rodName.BackgroundTransparency = 1
-            rodName.TextXAlignment = Enum.TextXAlignment.Left
+            -- Hover effect
+            btn.MouseEnter:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.2), {
+                    BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+                }):Play()
+            end)
             
-            local rodStats = Instance.new("TextLabel", rodFrame)
-            rodStats.Size = UDim2.new(1, -20, 0, 40)
-            rodStats.Position = UDim2.new(0, 10, 0, 40)
-            rodStats.Text = string.format("Type: %s\nSpeed: %d%% | Weight: %dkg",
-                rodInfo.Data.Type,
-                rodInfo.Data.Speed,
-                rodInfo.Data.Weight)
-            rodStats.TextColor3 = Color3.fromRGB(180, 180, 200)
-            rodStats.Font = Enum.Font.Gotham
-            rodStats.TextSize = 12
-            rodStats.BackgroundTransparency = 1
-            rodStats.TextXAlignment = Enum.TextXAlignment.Left
+            btn.MouseLeave:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.2), {
+                    BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+                }):Play()
+            end)
             
-            local locationTag = Instance.new("TextLabel", rodFrame)
-            locationTag.Size = UDim2.new(0, 80, 0, 20)
-            locationTag.Position = UDim2.new(1, -90, 0, 10)
-            locationTag.Text = rodInfo.Location
-            locationTag.TextColor3 = Color3.fromRGB(150, 150, 150)
-            locationTag.Font = Enum.Font.GothamSemibold
-            locationTag.TextSize = 10
-            locationTag.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            locationTag.BackgroundTransparency = 0.5
-            Instance.new("UICorner", locationTag).CornerRadius = UDim.new(0, 4)
+            -- Click to teleport
+            btn.MouseButton1Click:Connect(function()
+                fastSmoothTeleport(tp.cf)
+            end)
+            
+            itemsAdded = itemsAdded + 1
         end
     end
+    
+    -- Update canvas size berdasarkan jumlah items
+    local itemHeight = 56  -- 50 height + 6 padding
+    local totalHeight = itemsAdded * itemHeight
+    local maxVisibleHeight = Scroll.AbsoluteSize.Y
+    
+    if totalHeight > maxVisibleHeight then
+        Scroll.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+        ListContainer.Size = UDim2.new(1, 0, 0, totalHeight)
+    else
+        Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        ListContainer.Size = UDim2.new(1, 0, 1, 0)
+    end
+    
+    -- Update title dengan count
+    Title.Text = "🎣 AmsHub | " .. itemsAdded .. " Locations"
+end
+
+--==================================
+-- EVENT LISTENERS
+--==================================
+Search:GetPropertyChangedSignal("Text"):Connect(function()
+    rebuildList()
+end)
+
+TeleportBtn.MouseButton1Click:Connect(function()
+    rebuildList()
 end)
 
 --==================================
--- MINIMIZE SYSTEM (FIXED)
+-- MINIMIZE TO BUBBLE (DRAGGABLE)
 --==================================
 local Bubble = Instance.new("TextButton", gui)
 Bubble.Size = UDim2.new(0, 50, 0, 50)
@@ -621,7 +329,7 @@ Bubble.MouseButton1Click:Connect(function()
 end)
 
 --==================================
--- HOTKEY TOGGLE
+-- RIGHT SHIFT HIDE / SHOW
 --==================================
 UIS.InputBegan:Connect(function(input, gp)
     if gp then return end
@@ -632,23 +340,11 @@ UIS.InputBegan:Connect(function(input, gp)
 end)
 
 --==================================
--- INITIALIZATION
+-- INITIAL LOAD
 --==================================
-showPanel("Teleport")
+rebuildList()
 
--- Add some sample teleport locations
-for i = 1, 20 do
-    local btn = Instance.new("TextButton", TeleportContainer)
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.LayoutOrder = i
-    btn.Text = "Location " .. i .. "  [Island]"
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-end
-
-print("✅ Fixed UI Loaded!")
-print("🎣 Rod Scanner Ready!")
-print("📱 UI will not escape panel bounds!")
+print("🎣 AmsHub Fish It Teleport Loaded!")
+print("📍 " .. #Teleports .. " locations available")
+print("🔍 Search and filter by category")
+print("🎯 RightShift to toggle UI")
